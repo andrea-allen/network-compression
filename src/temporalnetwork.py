@@ -26,6 +26,10 @@ class TemporalNetwork:
                     return False
         return True
 
+    def set_all_betas(self, new_beta):
+        for snapshot in self.snapshots:
+            snapshot.set_new_beta(new_beta)
+
 
 class Snapshot:
     """
@@ -56,3 +60,6 @@ class Snapshot:
             return dd
         dd = dd / np.sum(dd)
         return dd
+
+    def set_new_beta(self, new_beta):
+        self.beta = new_beta

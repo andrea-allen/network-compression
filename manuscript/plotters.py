@@ -3,6 +3,32 @@ import seaborn as sns
 import pandas as pd
 import numpy as np
 
+def plot_error_fn_compressions(results):
+    iter_range = results["iter_range"]
+    optimal_errors_norm = results['opt_error_norm']
+    even_errors_norm = results['even_error_norm']
+    tce_all = results["tce_all"]
+    fig, ax = plt.subplots(2, 1)
+
+    colors = sns.color_palette("hls", 8)
+    # ax[0].scatter(iter_range, optimal_errors, color=colors[0], label='Algorithmic')
+    # ax[0].plot(iter_range, optimal_errors, color=colors[0], label='Algorithmic')
+    # ax[0].scatter(iter_range, even_errors, color=colors[3], label='Even')
+    # ax[0].plot(iter_range, even_errors, color=colors[3], label='Even')
+    ax[1].scatter(iter_range, optimal_errors_norm, color=colors[0], label='Algorithmic')
+    ax[1].plot(iter_range, optimal_errors_norm, color=colors[0], label='Algorithmic')
+    ax[1].scatter(iter_range, even_errors_norm, color=colors[3], label='Even')
+    ax[1].plot(iter_range, even_errors_norm, color=colors[3], label='Even')
+    ax[0].scatter(iter_range, tce_all, color=colors[3], label='TCE')
+    ax[0].plot(iter_range, tce_all, color=colors[3], label='TCE')
+    # plt.xticks(np.linspace(0, iter_range+1, 10))
+    # plt.xticks(list(int(np.arange(0, iter_range+1))))
+    ax[1].set_xlabel('Iterations')
+    ax[0].set_ylabel('Total chosen error')
+    ax[1].set_ylabel('Total normalized error')
+    # plt.xticks([0, 5, 10, 15, 19])
+    plt.legend(loc='upper left')
+
 def plot_one_round(results):
     """
     :param results: dict? for now

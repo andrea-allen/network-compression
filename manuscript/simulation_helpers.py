@@ -60,25 +60,11 @@ def run_temporal(temporal_network, t_interval, beta, number_snapshots):
 
 
 def one_round(temporal_network, t_interval, beta, number_snapshots, iters):
-    total_time = 0
     temp_t, temp_inf, temp_net = run_temporal(temporal_network, t_interval, beta, number_snapshots)
-    # rand_t, rand_inf, rand_net = run_random(temporal_network, t_interval, beta, number_snapshots, levels, iters)
     even_t, even_inf, even_net = run_even(temporal_network, t_interval, beta, number_snapshots, iters)
-    # opt_t_h, opt_inf_h, opt_net_h = run_optimal(temporal_network, t_interval, beta, number_snapshots, levels, iters, 'halftime')
-    # opt_t, opt_inf, opt_net = run_optimal(temporal_network, t_interval, beta, number_snapshots, levels, iters, 'terminal')
     opt_t_c, opt_inf_c, opt_net_c, total_chosen_error = run_optimal(temporal_network, t_interval, beta, number_snapshots, iters, 'combined')
-    # print(f"opt net snapshots {opt_net.length}")
-    print(f"temp net snapshots {temp_net.length}")
-    # print(f"rand net snapshots {rand_net.length}")
-    print(f"TOTAL TIME FOR DIGITIZE {total_time}")
-    # total_optimal_error_nm = round(integrate_error_ts(temp_t, temp_inf, opt_t, opt_inf), 3)
-    # total_optimal_h_error_nm = round(integrate_error_ts(temp_t, temp_inf, opt_t_h, opt_inf_h), 3)
     total_optimal_c_error_nm = round(integrate_error_ts(temp_t, temp_inf, opt_t_c, opt_inf_c), 3)
-    # total_optimal_error = round(np.sum(np.abs(-np.array(temp_inf)+np.array(opt_inf))), 3)
-    # total_random_error_nm = round(np.sum(np.abs(-np.array(temp_inf)+np.array(rand_inf))/np.array(temp_inf)), 3)
-    # total_random_error = round(np.sum(np.abs(-np.array(temp_inf)+np.array(rand_inf))), 3)
     total_even_error_nm = round(integrate_error_ts(temp_t, temp_inf, even_t, even_inf), 3)
-    total_even_error = round(np.sum(np.abs(-np.array(temp_inf)+np.array(even_inf))), 3)
 
     results = {'temp_t': temp_t, 'temp_inf': temp_inf, 'algo_t': opt_t_c, 'algo_inf': opt_inf_c, 'even_t': even_t,
                'even_inf': even_inf, 'algo_boundary_times': opt_net_c.get_time_network_map().keys(),
@@ -87,4 +73,37 @@ def one_round(temporal_network, t_interval, beta, number_snapshots, iters):
                'total_algo_error': total_optimal_c_error_nm, 'total_even_error': total_even_error_nm,
                'total_chosen_error': total_chosen_error}
 
+    return results
+
+
+def error_as_fn_of(temp_net, beta, iter_range):
+    t_interval = temp_net.snapshots[0].duration # random snapshot, should be same t_interval for all starting out
+    if iter_range is None:
+        gap = 5
+        iter_range = np.arange(0, temp_net.length, gap)
+    even_errors_norm = np.zeros(len(iter_range))
+    optimal_errors_norm = np.zeros(len(iter_range))
+    tce_all = np.zeros(len(iter_range))
+    temp_t, temp_inf, temp_net = run_temporal(temp_net, t_interval, beta, temp_net.length)
+
+    current_optimal_temp_net = temp_net
+    current_iters_for_optim = 0
+    for i, r in enumerate(iter_range):
+        c = int(r)
+        even_t, even_inf, even_net = run_even(temp_net, t_interval, beta, temp_net.length, c)
+        opt_t, opt_inf, opt_net, tce = run_optimal(current_optimal_temp_net, t_interval, beta,
+                                              temp_net.length, c-current_iters_for_optim, 'combined')
+        current_iters_for_optim = c
+        current_optimal_temp_net = opt_net
+        total_optimal_error_nm = integrate_error_ts(temp_t, temp_inf, opt_t, opt_inf)
+        print(f"***, {i, r}")
+        total_even_error_nm = integrate_error_ts(temp_t, temp_inf, even_t, even_inf)
+
+        optimal_errors_norm[i] = total_optimal_error_nm
+        even_errors_norm[i] = total_even_error_nm
+        tce_all[i] = tce
+
+    results = { "opt_error_norm": optimal_errors_norm, "even_error_norm": even_errors_norm,
+                "tce_all": tce_all, "iter_range":iter_range
+    }
     return results
