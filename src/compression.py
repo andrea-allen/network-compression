@@ -135,9 +135,7 @@ class Compressor:
             error = D
             e_halftime = np.sum(np.abs(error).dot(P0))
             if np.isnan(e_terminal) or np.isnan(e_halftime):
-                print('STOP')
-            if e_halftime > 0 and e_terminal==0:
-                print(f'halftime: {e_halftime}, terminal: {e_terminal}')
+                print('STOP, nans')
             return (e_halftime + e_terminal) * (snapshot.duration + other_snapshot.duration)
 
         elif error_type.lower()=='terminal':
