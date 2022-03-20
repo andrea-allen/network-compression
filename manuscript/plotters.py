@@ -2,6 +2,11 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
+from matplotlib.colors import LinearSegmentedColormap
+# plt.rcParams.update({
+#     "text.usetex": True,})
+    # "font.family": "sans-serif",
+    # "font.sans-serif": ["Helvetica"]})
 
 def plot_error_fn_compressions(results):
     iter_range = results["iter_range"]
@@ -108,3 +113,45 @@ def plot_one_round(results):
     plt.tight_layout()
     # fig.set_size_inches(5,5)
     print("ENDING PLOT")
+
+
+def plot_heatmap(matrix, betas, compressions, title='Difference of Algorithmic-Even Total Integrated Error'):
+    # cmap = sns.diverging_palette(220, 20, as_cmap=True)
+    colorlist = ["#C54CC5",  "#FFC626", "#00A4D4",]
+    newcmp = LinearSegmentedColormap.from_list('testCmap', colors=colorlist, N=256)
+    c = np.linspace(0, 80, 12)
+    ax = sns.heatmap(matrix, cmap=newcmp, center=0, square=True)
+    ax.set_xlabel('Number of compressions')
+    ax.set_xticklabels(compressions)
+    ax.set_yticklabels(betas, rotation=45)
+    ax.set_ylabel('Beta')
+    ax.set_title(title)
+
+def plot_tce(matrix, betas, compressions):
+    fig, ax = plt.subplots()
+    for b, beta in enumerate(betas):
+        ax.plot(compressions, matrix[b], label=beta)
+    ax.legend(frameon=False)
+
+
+def plot_comparison_and_error(results, betas, compressions, title=""):
+    colorlist = ["#C54CC5",  "#FFC626", "#00A4D4",]
+    newcmp = LinearSegmentedColormap.from_list('testCmap', colors=colorlist, N=256)
+    ax = sns.heatmap(results["difference_matrix"], cmap=newcmp, center=0, linecolor='white', linewidths=.5,
+                     cbar_kws={'label': 'algorithmic error minus even error', 'orientation': 'horizontal'})
+    ax.set_xlabel('Number of compressions')
+    ax.set_xticklabels(compressions)
+    ax.set_yticklabels(betas, rotation=45)
+    ax.set_ylabel('Beta')
+    ax.set_title(title)
+    y_ticks = []
+    # ax2 = ax.twinx()
+    for b in range(len(betas)-1):
+        matrix = np.cumsum(results["tce"], axis=0)
+        sns.lineplot(np.arange(10) + .5, ((-matrix[b] / np.max(matrix[b])) + 1 + b), color='k', lw=1)
+        y_ticks.append(b)
+    sns.lineplot(np.arange(10) + .5, ((-matrix[len(betas)-1] / np.max(matrix[len(betas)-1])) + 1 + (len(betas)-1)),
+                 color='k', lw=1, label='Sum of aggregation error \n chosen by algorithm')
+    ax.legend(frameon=False)
+
+

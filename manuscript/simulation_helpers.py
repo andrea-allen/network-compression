@@ -107,3 +107,15 @@ def error_as_fn_of(temp_net, beta, iter_range):
                 "tce_all": tce_all, "iter_range":iter_range
     }
     return results
+
+
+def total_error_as_fn_of(betas, iter_range, a_temporal_network):
+    difference_matrix = np.zeros((len(betas), len(iter_range)))
+    tce_matrix = np.zeros((len(betas), len(iter_range)))
+    for b in range(len(betas)):
+        a_temporal_network.set_all_betas(betas[b])
+        error_results = error_as_fn_of(a_temporal_network, betas[b], iter_range)
+        difference_matrix[b] = error_results["opt_error_norm"] - error_results["even_error_norm"]
+        tce_matrix[b] = error_results["tce_all"]
+    results = {"difference_matrix":difference_matrix, "tce":tce_matrix}
+    return results
