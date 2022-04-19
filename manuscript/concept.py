@@ -6,6 +6,464 @@ from scipy.linalg import expm
 from manuscript.simulation_helpers import *
 from manuscript.network_generators import *
 from manuscript.plotters import *
+plt.rcParams
+
+
+def multi_panel_fig_idea2(snapshots, beta, increments):
+    # fig, ax = plt.subplots(1, len(increments)-1, sharey=True, sharex=True)
+    fig, ax = plt.subplots()
+    final_temporal_y_points = [0]
+    colors = ['m', 'c', 'gold', 'firebrick', 'indigo', 'forestgreen']
+    start_x = 0
+    for i in range(len(increments)-1):
+        tA = increments[i]
+        dA = increments[i] - start_x
+        tB = increments[i+1]
+        dB = increments[i+1] - tA
+        A = snapshots[i]
+        B = snapshots[i+1]
+        A_lay = Snapshot(0, dA, beta, snapshots[i])
+        B_lay = Snapshot(dA, dA+dB, beta, snapshots[i+1])
+        epsilon_terminal = Compressor.epsilon(A_lay, B_lay, error_type='terminal')
+        epsilon_halftime = Compressor.epsilon(A_lay, B_lay, error_type='halftime')
+        epsilon_combo = Compressor.epsilon(A_lay, B_lay, error_type='combined')
+        # for values tau in 0, T run a deterministic temporal
+        y_init = A_lay.dd_normalized
+        temp_model = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=dA+dB,
+                                     networks={dA: A, dA+dB: B})
+        solution_t_temporal, solution_p = temp_model.solve_model(custom_t_inc=.01)
+        temporal_timeseries = np.sum(solution_p, axis=0)
+        final_temp = temporal_timeseries[-1]
+        final_temporal_y_points.append(final_temp)
+        model = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=dA+dB,
+                                networks={dA+dB: (dA*A + dB*B)/(dA+dB)})
+        solution_t_agg, solution_p = model.solve_model(custom_t_inc=.01)
+        aggregate_timeseries = np.sum(solution_p, axis=0)
+        # plt.show()
+        final_agg = aggregate_timeseries[-1]
+
+        midpoint_a = 0
+        for t in range(len(solution_t_agg)):
+            if solution_t_agg[midpoint_a] < dA:
+                if solution_t_agg[t] > dA:
+                    midpoint_a = t
+        midpoint_t = 0
+        for t in range(len(solution_t_temporal)):
+            if solution_t_agg[midpoint_t] < dA:
+                if solution_t_temporal[t] > dA:
+                    midpoint_t = t
+        # midpoint_t = np.where(np.array(solution_t_temporal) == increments[i]+.01)[0][0]
+        ax.plot(start_x + np.array(solution_t_temporal)[:midpoint_t],  temporal_timeseries[:midpoint_t], color=colors[i], lw=1, label=f'Snapshot {i+1}')
+        if i+1 == len(increments) -1:
+            ax.plot(start_x + np.array(solution_t_temporal)[midpoint_t:],  temporal_timeseries[midpoint_t:], color=colors[i+1], lw=1, label=f'Snapshot {i+2}')
+        else:
+            ax.plot(start_x + np.array(solution_t_temporal)[midpoint_t:],  temporal_timeseries[midpoint_t:], color=colors[i+1], lw=1)
+        ax.plot(start_x + np.array(solution_t_agg),  aggregate_timeseries, color='grey', ls='--', lw=1)
+        ax.vlines(start_x + np.array(solution_t_temporal)[-1], ymin= aggregate_timeseries[-1],
+                        ymax= temporal_timeseries[-1], color='crimson', lw=1)
+        ax.vlines(start_x + dA,
+                        ymin= aggregate_timeseries[midpoint_a],
+                        ymax= temporal_timeseries[midpoint_t],
+                        color='crimson', lw=1)
+        ax.fill_between(start_x + np.array(solution_t_agg),  aggregate_timeseries,  temporal_timeseries, color='grey',
+                              alpha=0.3)
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.spines['top'].set_visible(False)
+        start_x = increments[i]
+    ax.legend(frameon=False, loc='upper left')
+
+def multi_panel_fig_idea(snapshots, beta, increments):
+    S1 = Snapshot(0, increments[0], beta, snapshots[0])
+    y_init = S1.dd_normalized
+    temp_model = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=increments[-1],
+                                 networks={increments[i]: snapshots[i] for i in range(len(increments))})
+    solution_t_temporal, solution_p, p_states = temp_model.solve_model(return_p_vecs=True)
+    temporal_timeseries = np.sum(solution_p, axis=0)
+
+    colors = ['m', 'c', 'gold', 'lime', 'orange', 'purple', 'blue', 'indigo']
+    fig, ax = plt.subplots(1,2)
+    fig2, ax2 = plt.subplots(1,5, sharey=True, sharex=False)
+    start = 0
+    temporal_midpoint_keys = []
+    for i in range(len(increments)):
+        midpoint_t = np.where(np.array(solution_t_temporal) == increments[i])[0][0]
+        temporal_midpoint_keys.append(midpoint_t)
+        ax[0].plot(solution_t_temporal[start:midpoint_t], temporal_timeseries[start:midpoint_t], color=colors[i], lw=1)
+        if i < len(increments)-1:
+            ax2[i].plot(solution_t_temporal[start:midpoint_t], temporal_timeseries[start:midpoint_t], color=colors[i], lw=1)
+        if i > 0:
+            ax2[i-1].plot(solution_t_temporal[start:midpoint_t], temporal_timeseries[start:midpoint_t], color=colors[i], lw=1)
+        start = midpoint_t
+
+    snap_1_duration = increments[0]
+
+    new_y_init = y_init
+    start_y = 0
+    start_x = 0
+    orig_start = 0
+    for i in range(len(increments)):
+        try:
+            snap_2_duration = increments[i+1] - increments[i]
+            y_init = p_states[i]
+            # y_init = Snapshot(orig_start, increments[i], beta, snapshots[i]).dd_normalized
+            agg_model = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=snap_1_duration+snap_2_duration,
+                                networks={snap_1_duration+snap_2_duration: (snap_1_duration*snapshots[i] + snap_2_duration*snapshots[i+1]) / (snap_2_duration+snap_1_duration)})
+            epsilon_combo = Compressor.epsilon(Snapshot(orig_start, increments[i], beta, snapshots[i]), Snapshot(increments[i], increments[i+1], beta, snapshots[i+1]), error_type='combined')
+            orig_start = increments[i]
+            solution_t_agg, solution_p = agg_model.solve_model()
+            aggregate_timeseries = np.sum(solution_p, axis=0)
+            new_y_init = solution_p[:,-1] # needs to be the y init of the temporal solution
+            midpoint_a = 0
+            for t in range(len(solution_t_agg)):
+                if solution_t_agg[midpoint_a] < snap_1_duration:
+                    if solution_t_agg[t] > snap_1_duration:
+                        midpoint_a = t
+            try:
+                ax[0].plot(start_x + np.array(solution_t_agg), np.array(aggregate_timeseries), color='grey', ls='--', lw=1)
+                ax2[i].plot(start_x + np.array(solution_t_agg), np.array(aggregate_timeseries), color='grey', ls='--', lw=1)
+                ax[0].vlines(increments[i],
+                              ymin=aggregate_timeseries[midpoint_a],
+                              ymax=temporal_timeseries[temporal_midpoint_keys[i]],
+                              color='crimson', lw=1)
+                ax2[i].vlines(increments[i],
+                             ymin=aggregate_timeseries[midpoint_a],
+                             ymax=temporal_timeseries[temporal_midpoint_keys[i]],
+                             color='crimson', lw=1)
+                ax[0].fill_between(start_x + np.array(solution_t_agg),
+                                    np.full(len(solution_t_agg), aggregate_timeseries[midpoint_a]),
+                                    np.full(len(solution_t_agg), temporal_timeseries[temporal_midpoint_keys[i]]),
+                                    color=colors[i], alpha=0.35, label=np.round(
+                        np.abs(aggregate_timeseries[midpoint_a] - temporal_timeseries[temporal_midpoint_keys[i]]) * (snap_1_duration+snap_2_duration), 2))
+                ax2[i].fill_between(start_x + np.array(solution_t_agg),
+                                   np.full(len(solution_t_agg), aggregate_timeseries[midpoint_a]),
+                                   np.full(len(solution_t_agg), temporal_timeseries[temporal_midpoint_keys[i]]),
+                                   color=colors[i], alpha=0.35, label=np.round(
+                        np.abs(aggregate_timeseries[midpoint_a] - temporal_timeseries[temporal_midpoint_keys[i]]) * (
+                                    snap_1_duration + snap_2_duration), 2))
+                ax2[i].fill_between(start_x + np.array(solution_t_agg),
+                                   aggregate_timeseries,
+                                   temporal_timeseries[temporal_midpoint_keys[i-1]: temporal_midpoint_keys[i+1]],
+                                   color=colors[i], alpha=0.35, label=np.round(
+                        np.abs(aggregate_timeseries[midpoint_a] - temporal_timeseries[temporal_midpoint_keys[i]]) * (
+                                    snap_1_duration + snap_2_duration), 2))
+                # hatch='///', zorder=2, fc='c',)
+                endpoint_t = np.where(np.array(solution_t_temporal) == increments[i + 1])[0][0]
+                ax[0].fill_between(start_x + np.array(solution_t_agg),
+                                    np.full(len(solution_t_agg), aggregate_timeseries[-1]),
+                                    np.full(len(solution_t_agg), temporal_timeseries[endpoint_t]),
+                                    color=colors[i], alpha=0.35,
+                                    label=np.round(np.abs(aggregate_timeseries[-1] - temporal_timeseries[endpoint_t]) * (snap_1_duration+snap_2_duration),
+                                                   2))
+                ax2[i].fill_between(start_x + np.array(solution_t_agg),
+                                    np.full(len(solution_t_agg), aggregate_timeseries[-1]),
+                                    np.full(len(solution_t_agg), temporal_timeseries[endpoint_t]),
+                                    color=colors[i], alpha=0.35,
+                                    label=np.round(np.abs(aggregate_timeseries[-1] - temporal_timeseries[endpoint_t]) * (snap_1_duration+snap_2_duration),
+                                                   2))
+                ax[1].fill_between(start_x + np.array(solution_t_agg),
+                                    np.full(len(solution_t_agg), aggregate_timeseries[midpoint_a]),
+                                    np.full(len(solution_t_agg),
+                                            aggregate_timeseries[midpoint_a] + epsilon_combo / (snap_1_duration+snap_2_duration)),
+                                    color=colors[i], alpha=0.4, label=f'Approximation:{np.round(epsilon_combo, 2)}')
+                start_x = increments[i]
+                ax[0].legend(frameon=False)
+                ax[1].legend(frameon=False)
+                ax2[i].spines['right'].set_visible(False)
+                ax2[i].spines['top'].set_visible(False)
+                ax2[i].spines['left'].set_visible(False)
+                ax2[i].spines['bottom'].set_visible(True)
+                ax2[i].legend(frameon=False, loc='lower right')
+                ax2[i].set_xlabel('t')
+            except:
+                ax[0].plot(solution_t_agg, aggregate_timeseries, color='grey', ls='--', lw=1)
+
+        except:
+            pass
+        snap_1_duration = snap_2_duration
+    ax2[0].set_ylabel('Infected nodes')
+
+
+
+def concept_custom_durations(A, B, beta, tA, tB):
+    A_lay = Snapshot(0, tA, beta, A)
+    B_lay = Snapshot(tA, tB, beta, B)
+    C_lay = Snapshot(tB, tB+tB, beta, A)
+    # epsilon_terminal = Compressor.epsilon(A_lay, B_lay, error_type='terminal')
+    # epsilon_halftime = Compressor.epsilon(A_lay, B_lay, error_type='halftime')
+    epsilon_combo = Compressor.epsilon(A_lay, B_lay, error_type='combined')
+    # for values tau in 0, T run a deterministic temporal
+    y_init = A_lay.dd_normalized
+    temp_model = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=tB+tB,
+                                 networks={tA: A, tB: B, tB+tB: A})
+    solution_t_temporal, solution_p = temp_model.solve_model()
+    temporal_timeseries = np.sum(solution_p, axis=0)
+    final_temp = temporal_timeseries[-1]
+    model_agg1 = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=tB,
+                            networks={tB: (tA*A + (tB-tA)*B) / (tB), tB+tB: A})
+    model_agg2 = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=tB,
+                            networks={tA: A, tB+tB: ((tB-tA)*B + (tB)*A) / ((tB+tB))})
+    solution_t_agg, solution_p = model_agg1.solve_model()
+    aggregate_timeseries = np.sum(solution_p, axis=0)
+    # plt.show()
+    final_agg = aggregate_timeseries[-1]
+    P0 = A_lay.dd_normalized
+    # matexp_temp = np.sum(expm(tau * B).dot(expm(tau * A).dot(P0)))
+    # matexp_agg = np.sum(expm(2 * tau * (B + A) / 2).dot(P0))
+
+    fig2, ax2 = plt.subplots(1,2, sharey=True, sharex=True)
+    midpoint_t = np.where(np.array(solution_t_temporal)==tA)[0][0]
+    midpoint_a = 0
+    for t in range(len(solution_t_agg)):
+        if solution_t_agg[midpoint_a] < tA:
+            if solution_t_agg[t] > tA:
+                midpoint_a = t
+    print(midpoint_a)
+    print(solution_t_agg[midpoint_a])
+    # midpoint_a = np.where(np.array(solution_t_agg)==12)[0][0]
+
+    ax2[0].plot(solution_t_temporal[:midpoint_t], temporal_timeseries[:midpoint_t], color='m', lw=1)
+    ax2[0].plot(solution_t_temporal[midpoint_t:], temporal_timeseries[midpoint_t:], color='c', lw=1)
+    ax2[0].plot(solution_t_agg, aggregate_timeseries, color='grey', ls='--', lw=1)
+    ax2[0].vlines(solution_t_temporal[-1], ymin=aggregate_timeseries[-1],
+                    ymax=temporal_timeseries[-1], color='crimson', lw=1)
+    ax2[0].vlines(tA,
+                    ymin=aggregate_timeseries[midpoint_a],
+                    ymax=temporal_timeseries[midpoint_t],
+                    color='crimson', lw=1)
+    ax2[0].fill_between(solution_t_temporal,
+                     np.full(len(solution_t_temporal), aggregate_timeseries[midpoint_a]),
+                     np.full(len(solution_t_temporal), temporal_timeseries[midpoint_t]),
+                     color='gold', alpha=0.5, label=np.round(np.abs(aggregate_timeseries[midpoint_a]-temporal_timeseries[midpoint_t])*(tB), 2))
+                    # hatch='///', zorder=2, fc='c',)
+    ax2[0].fill_between(solution_t_temporal,
+                     np.full(len(solution_t_temporal), aggregate_timeseries[-1]),
+                     np.full(len(solution_t_temporal), temporal_timeseries[-1]),
+                     color='gold', alpha=0.5, label=np.round(np.abs(aggregate_timeseries[-1]-temporal_timeseries[-1])*(tB),2))
+                     # hatch='///', zorder=2, fc='c',)
+
+    ax2[1].plot(solution_t_temporal[:midpoint_t], temporal_timeseries[:midpoint_t], color='m', lw=1)
+    ax2[1].plot(solution_t_temporal[midpoint_t:], temporal_timeseries[midpoint_t:], color='c', lw=1)
+    ax2[1].plot(solution_t_agg, aggregate_timeseries, color='grey', ls='--', lw=1)
+    ax2[1].vlines(solution_t_temporal[-1], ymin=aggregate_timeseries[-1],
+                    ymax=temporal_timeseries[-1], color='crimson', lw=1)
+    ax2[1].vlines(tA,
+                    ymin=aggregate_timeseries[midpoint_a],
+                    ymax=temporal_timeseries[midpoint_t],
+                    color='crimson', lw=1)
+    ax2[1].fill_between(solution_t_temporal,
+                     np.full(len(solution_t_temporal), aggregate_timeseries[midpoint_a]),
+                     np.full(len(solution_t_temporal), aggregate_timeseries[midpoint_a] + epsilon_combo / (tB)),
+                     color='m', alpha=0.4, label=f'Approximation:{np.round(epsilon_combo,2)}')
+    ax2[0].spines['right'].set_visible(False)
+    ax2[0].spines['top'].set_visible(False)
+    ax2[1].spines['right'].set_visible(False)
+    ax2[1].spines['top'].set_visible(False)
+    ax2[0].legend(frameon=False, loc='lower right')
+    ax2[1].legend(frameon=False, loc='lower right')
+
+
+
+def manuscript_fig2(A, B, beta, taus):
+    rd_bu = sns.color_palette('RdBu')
+    algo_blue = rd_bu[5]
+    error_approx_terminal = np.zeros(len(taus))
+    error_approx_halftime = np.zeros(len(taus))
+    error_approx_combo = np.zeros(len(taus))
+    matexp_temps = np.zeros(len(taus))
+    matexp_temps_h = np.zeros(len(taus))
+    matexp_aggs = np.zeros(len(taus))
+    matexp_aggs_h = np.zeros(len(taus))
+    det_temps = np.zeros(len(taus))
+    det_temps_halftime = np.zeros(len(taus))
+    det_aggs = np.zeros(len(taus))
+    det_aggs_halftime = np.zeros(len(taus))
+    integral_solutions = np.zeros(len(taus))
+
+    type_colors = {'temp': 'grey', 'even': "#FFC626", 'algo': "#00A4D4"}
+    tau_color = sns.color_palette('Greys', len(taus))
+
+    fig, ax = plt.subplots(2, 2)
+    for t, tau in enumerate(taus):
+        A_lay = Snapshot(0, tau / beta, beta, A)
+        B_lay = Snapshot(tau / beta, 2 * tau / beta, beta, B)
+        epsilon_terminal = Compressor.epsilon(A_lay, B_lay, error_type='terminal')
+        epsilon_halftime = Compressor.epsilon(A_lay, B_lay, error_type='halftime')
+        epsilon_combo = Compressor.epsilon(A_lay, B_lay, error_type='combined')
+        error_approx_terminal[t] = epsilon_terminal
+        error_approx_halftime[t] = epsilon_halftime
+        error_approx_combo[t] = epsilon_combo
+        # for values tau in 0, T run a deterministic temporal
+        y_init = A_lay.dd_normalized
+        temp_model = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=2 * tau / beta,
+                                     networks={tau / beta: A, 2 * tau / beta: B})
+        solution_t_temporal, solution_p = temp_model.solve_model()
+        temporal_timeseries = np.sum(solution_p, axis=0)
+        final_temp = temporal_timeseries[-1]
+        det_temps[t] = final_temp
+        det_temps_halftime[t] = temporal_timeseries[int(len(temporal_timeseries) / 2)]
+        # plt.plot(solution_t_temporal, temporal_timeseries, label='fully temporal')
+        model = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=2 * tau / beta,
+                                networks={2 * tau / beta: (A + B) / 2})
+        solution_t_agg, solution_p = model.solve_model()
+        aggregate_timeseries = np.sum(solution_p, axis=0)
+        # plt.show()
+        final_agg = aggregate_timeseries[-1]
+        det_aggs[t] = final_agg
+        det_aggs_halftime[t] = aggregate_timeseries[int(len(aggregate_timeseries) / 2)]
+        # det_temp = _
+        # det_agg = _
+        # For values tau in 0, T run the matrix approximation temporal
+        P0 = np.full(N, 1 / N)
+        P0 = A_lay.dd_normalized
+        matexp_temp = np.sum(expm(tau * B).dot(expm(tau * A).dot(P0)))
+        matexp_agg = np.sum(expm(2 * tau * (B + A) / 2).dot(P0))
+        matexp_temps[t] = matexp_temp
+        matexp_aggs[t] = matexp_agg
+        matexp_temps_h[t] = np.sum(expm(tau * A).dot(P0))
+        matexp_aggs_h[t] = np.sum(expm(tau * (B + A) / 2).dot(P0))
+        integrate_between = integrate_error_ts(temporal_ts=solution_t_temporal, temporal_inf=temporal_timeseries,
+                                               other_ts=solution_t_agg, other_inf=aggregate_timeseries)
+        integral_solutions[t] = integrate_between
+
+
+    midpoint = int(len(aggregate_timeseries) / 2)
+    ax[0, 1].plot(solution_t_temporal[:midpoint], temporal_timeseries[:midpoint], color='orange', lw=1) #'m'
+    ax[0, 1].plot(solution_t_temporal[midpoint:], temporal_timeseries[midpoint:], color='green', lw=1)
+    ax[0, 1].plot(solution_t_agg, aggregate_timeseries, color=tau_color[t], ls='--', lw=1)
+    ax[0, 1].vlines(solution_t_temporal[-1], ymin=aggregate_timeseries[-1],
+                    ymax=temporal_timeseries[-1], color='k', lw=1)
+    ax[0, 1].vlines(tau / beta,
+                    ymin=aggregate_timeseries[midpoint],
+                    ymax=temporal_timeseries[midpoint],
+                    color='k', lw=1)
+    ax[0, 1].fill_between(solution_t_temporal, aggregate_timeseries, temporal_timeseries, color=tau_color[t],
+                          alpha=0.25)
+    ax[0, 1].text(tau / beta - 3, temporal_timeseries[midpoint] + 3, 'temporal solution')
+    ax[0, 1].text(tau / beta, aggregate_timeseries[midpoint] - 2, 'aggregate solution')
+    ax[0, 1].text(tau / beta, temporal_timeseries[midpoint] - .2*temporal_timeseries[midpoint], '$\\epsilon_{MID}$')
+    ax[0, 1].text(2*tau / beta-1, temporal_timeseries[-1] - .1*temporal_timeseries[-1], '$\\epsilon_{END}$')
+
+
+
+    ### Filling between for the approximation
+    temporal_mid = np.full( len(solution_t_temporal), temporal_timeseries[midpoint])
+    temporal_end = np.full( len(solution_t_temporal), temporal_timeseries[-1])
+    aggregate_mid = np.full(len(solution_t_temporal), aggregate_timeseries[midpoint])
+    aggregate_end = np.full(len(solution_t_temporal), aggregate_timeseries[-1])
+    ax[0, 1].fill_between(solution_t_temporal, temporal_mid, aggregate_mid, color=algo_blue,
+                          alpha=0.25)
+    ax[0, 1].fill_between(solution_t_temporal, temporal_end, aggregate_end, color=algo_blue,
+                          alpha=0.25)
+
+
+    ####
+
+    fig2, ax2 = plt.subplots()
+    midpoint = int(len(aggregate_timeseries) / 2)
+    ax2.plot(solution_t_temporal[:midpoint], temporal_timeseries[:midpoint], color='orange', lw=1)
+    ax2.plot(solution_t_temporal[midpoint:], temporal_timeseries[midpoint:], color='green', lw=1)
+    ax2.plot(solution_t_agg, aggregate_timeseries, color=tau_color[t], ls='--', lw=1)
+    ax2.vlines(solution_t_temporal[-1], ymin=aggregate_timeseries[-1],
+                    ymax=temporal_timeseries[-1], color='crimson', lw=1)
+    ax2.vlines(tau / beta,
+                    ymin=aggregate_timeseries[midpoint],
+                    ymax=temporal_timeseries[midpoint],
+                    color='crimson', lw=1)
+    ax2.fill_between(solution_t_temporal[:midpoint],
+                     np.full(len(solution_t_temporal[:midpoint]), aggregate_timeseries[midpoint]),
+                     np.full(len(solution_t_temporal[:midpoint]), temporal_timeseries[midpoint]),
+                     color='gold', alpha=0.5)
+                    # hatch='///', zorder=2, fc='c',alpha=0.2)
+    ax2.fill_between(solution_t_temporal[midpoint:],
+                     np.full(len(solution_t_temporal[midpoint:]), aggregate_timeseries[midpoint]),
+                     np.full(len(solution_t_temporal[midpoint:]), temporal_timeseries[midpoint]),
+                     color='gold', alpha=0.5)
+                    # hatch='///', zorder=2, fc='c',)
+    ax2.fill_between(solution_t_temporal,
+                     np.full(len(solution_t_temporal), aggregate_timeseries[-1]),
+                     np.full(len(solution_t_temporal), temporal_timeseries[-1]),
+                     color='green', alpha=0.5)
+                     # hatch='///', zorder=2, fc='c',)
+
+
+    sns.distplot([sum(A[n]) for n in range(N)], label='snapshot 1', color='orange', ax=ax[0,0], hist=False, kde_kws={'clip': (0.0, 20.0), 'bw':1.1})
+    sns.distplot([sum(B[n]) for n in range(N)], label='snapshot 2', color='green', ax=ax[0,0], hist=False, kde_kws={'clip': (0.0, 20.0), 'bw':1.1})
+    mean_snapshot1 = np.mean([sum(A[n]) for n in range(N)])
+    mean_snapshot2 = np.mean([sum(B[n]) for n in range(N)])
+    ax[0,0].axvline(mean_snapshot1, ls='--', color='orange')
+    ax[0,0].axvline(mean_snapshot2, ls='--', color='green')
+    ax[0,0].set_xticks([0, 2, 4, 6, 8, 10, 12, 14])
+    ax[0,0].legend(frameon=False)
+    ax[0,0].set_xlim([0,18])
+
+    fig3, ax3 = plt.subplots()
+    ### ALT 0,1 AX
+    ax[1,1].scatter(integral_solutions,error_approx_combo, color=algo_blue,
+                    marker='s', alpha=0.3,
+                    label='increasing $\\beta\\cdot\\delta t$')
+    # ax[1,1].scatter(taus,error_approx_combo/max(error_approx_combo), color=algo_blue,
+    #                 marker='s', alpha=0.3,
+    #                 label='error measure $\\xi_{A,B}$')
+    # ax[1,1].scatter(taus,integral_solutions/max(integral_solutions), color='grey',
+    #                 marker='s', alpha=0.3,
+    #                 label='true solution integral')
+    # ax[0,0].plot(taus, integral_solutions, ls='-', lw=2, color='k', label='true solution')
+    ax[1,1].set_xlabel('True solution integrated error')
+    # ax[1,1].set_xlabel('$\\beta \\cdot \\delta t$')
+    ax[1,1].set_ylabel('Error measure $\\xi_{A,B}$')
+    # ax[1,1].set_ylabel('Infected nodes error')
+    ax[1,1].legend(frameon=False, loc='upper left')
+    #####
+    # diff_matexp = matexp_temp - matexp_agg
+    # diff_det = det_temp - det_agg
+    # Fig 2a: plot tau vs det_temp, det_agg, matexp_temp, matexp_agg
+    ax3.plot(taus, det_temps, label='ODE, temporal', alpha=0.9, color='black', ls='-')
+    ax3.plot(taus, det_aggs, label='ODE, aggregate', alpha=0.6, color='black', ls='--')
+    ax3.plot(taus, matexp_temps, label='$exp(\\beta\\delta t B)exp(\\beta\\delta t A)$', alpha=0.5, color='grey', ls='-')
+    ax3.plot(taus, matexp_aggs, label='$exp(\\beta(2\\delta t) \\overline{A+B})$', alpha=0.5, color='grey', ls='--')
+    ax3.set_xlabel('$\\beta \\delta t$')
+    ax3.set_ylabel('number nodes infected \nafter $2\\delta t$ time')
+    ax3.legend(frameon=False)
+
+    ## SQUARE 1,1 option
+    # ax[1,1].scatter((np.abs(det_temps - det_aggs) + np.abs(det_temps_halftime - det_aggs_halftime)),
+    #             error_approx_combo / (2 * taus / beta), marker='o', fc='none', color=algo_blue)
+    # ax[1,1].set_xlabel('ODE solution error')
+    # ax[1,1].set_ylabel('Predicted error $\\xi$')
+    # ax[1,1].plot(error_approx_combo/(2*taus/beta), error_approx_combo/(2*taus/beta), color='grey', ls=':')
+
+    ## ALT SQUARE 1,1
+    ax[1,0].plot(taus,error_approx_combo/ (2 * taus / beta), ls='-.', lw=2, color=algo_blue, label='prediction, $\\epsilon_{MID}+\\epsilon_{END}$')
+    ax[1,0].plot(taus,  (np.abs(det_temps - det_aggs) + np.abs(det_temps_halftime - det_aggs_halftime)), ls='-', lw=2, color='k', label='true solution, $\\epsilon_{MID}+\\epsilon_{END}$')
+    ax[1,0].set_xlabel('$\\beta \\cdot \\delta t$')
+    ax[1,0].set_ylabel('Infected nodes')
+    ax[1,0].legend(frameon=False, loc='upper left')
+
+    #####
+
+    # Labels
+    ax[0, 1].set_xlabel('Time t')
+    ax[0, 1].set_ylabel('Infected nodes')
+    ax[0, 0].set_xlabel('Degree')
+    ax[0, 0].set_ylabel('Distribution')
+
+    fig.set_size_inches((8,6))
+    ax[1,0].spines['right'].set_visible(False)
+    ax[1,0].spines['top'].set_visible(False)
+    ax[0,1].spines['right'].set_visible(False)
+    ax[0,1].spines['top'].set_visible(False)
+    ax[0,0].spines['right'].set_visible(False)
+    ax[0,0].spines['top'].set_visible(False)
+    ax[1,1].spines['right'].set_visible(False)
+    ax[1,1].spines['top'].set_visible(False)
+
+    plt.tight_layout()
+    # fig.savefig('../results/concept_fig2.png')
+    # fig.savefig('../results/concept_fig2.svg', fmt='svg')
+    plt.show()
+
 
 def validation_on(A, B, beta, taus):
     error_approx_terminal = np.zeros(len(taus))
@@ -78,8 +536,8 @@ def validation_on(A, B, beta, taus):
         matexp_aggs_h[t] = np.sum(expm(tau*(B + A)/2).dot(P0))
 
     # sns.kdeplot([k for (n,k) in nx.degree(G3)], label='snapshot 1', color='m', ax=ax[0,2]) # not plotting this right but otherwise great
-    ax[0,2].hist([k for (n,k) in nx.degree(G3)],  label='snapshot 1', color='m', bins='auto', density=False)
-    ax[0,2].hist([k for (n,k) in nx.degree(G6)],  label='snapshot 2', color='c', bins='auto', density=False)
+    ax[0,2].hist([sum(A[n]) for n in range(N)],  label='snapshot 1', color='m',alpha=0.5, bins='auto', density=False)
+    ax[0,2].hist([sum(B[n]) for n in range(N)],  label='snapshot 2', color='c',alpha=0.5, bins='auto', density=False)
     # sns.kdeplot([k for (n,k) in nx.degree(G6)], label='snapshot 2', color='c', ax=ax[0,2])
     ax[0,2].legend(frameon=False)
     # diff_matexp = matexp_temp - matexp_agg
@@ -124,7 +582,7 @@ def validation_on(A, B, beta, taus):
     ax[1,2].legend(frameon=False)
 
     fig2, ax2 = plt.subplots()
-    ax2.scatter((np.abs(det_temps-det_aggs) + np.abs(det_temps_halftime-det_aggs_halftime))*(2*tau/beta), error_approx_combo)
+    ax2.scatter((np.abs(det_temps-det_aggs) + np.abs(det_temps_halftime-det_aggs_halftime)), error_approx_combo/(2*tau/beta))
 
     y = np.linspace(0, max(np.abs(det_temps-det_aggs)), 10)
     ax[1, 1].plot(y, y, color='k', ls='--', alpha=0.6)
@@ -133,31 +591,136 @@ def validation_on(A, B, beta, taus):
     ax[1, 0].legend()
     ax[1, 1].legend()
     # plt.show()
-    fig.set_size_inches((10,5))
+
+    #Labels
+    ax[0,0].set_xlabel('Time t')
+    ax[0,0].set_ylabel('Infected nodes')
+    ax[0,0].set_ylabel('Infected nodes')
+    ax[0,2].set_xlabel('Degree')
+    ax[0,2].set_ylabel('Distribution')
+    ax[1, 0].set_xlabel('midpoint difference (true)')
+    ax[1, 0].set_ylabel('difference (approx)')
+    ax[1, 1].set_xlabel('terminal difference (true)')
+    ax[1, 1].set_ylabel('difference (approx)')
+
+    # fig.set_size_inches((10,5))
 
     plt.tight_layout()
     plt.show()
 
+def monotonic_proof():
+    N = 100
+    G1, A1 = barbell_graph(N)
+    G2, A2 = cycle_graph(N)
+    G3, A3 = configuration_model_graph(N)
+    G4, A4 = erdos_renyi_graph(N, .01)
+    G5, A5 = erdos_renyi_graph(N, .04)
+    taus = np.linspace(0.0001, .6, 10)  # .7 for example
+    beta = .12
+
+    pairs = [(A1, A2), (A1, A3), (A1, A4), (A1, A5),
+             (A2, A1), (A2, A3), (A2, A4), (A2, A5),
+             (A3, A2), (A3, A1), (A3, A4), (A3, A5),
+             (A4, A2), (A4, A3), (A4, A1), (A4, A5),
+             (A5, A2), (A5, A3), (A5, A4), (A5, A1),
+             (A2, A2), (A3, A2), (A4, A2), (A5, A2),
+             (A2, A3), (A3, A3), (A4, A3), (A5, A3),
+             (A2, A4), (A4, A4), (A4, A4), (A5, A4),
+             (A2, A5), (A5, A5), (A5, A5), (A5, A5)]
+    error_approx_combo = np.zeros((len(pairs), len(taus)))
+    integrated_error = np.zeros((len(pairs), len(taus)))
+    for p in range(len(pairs)):
+        print(p/len(pairs))
+        A, B = pairs[p]
+        for t, tau in enumerate(taus):
+            print(t/len(taus))
+            A_lay = Snapshot(0, tau / beta, beta, A)
+            B_lay = Snapshot(tau / beta, 2 * tau / beta, beta, B)
+            epsilon_combo = Compressor.epsilon(A_lay, B_lay, error_type='combined')
+            error_approx_combo[p][t] = epsilon_combo
+            # for values tau in 0, T run a deterministic temporal
+            y_init = A_lay.dd_normalized
+            temp_model = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=2 * tau / beta,
+                                         networks={tau / beta: A, 2 * tau / beta: B})
+            solution_t_temporal, solution_p = temp_model.solve_model()
+            temporal_timeseries = np.sum(solution_p, axis=0)
+            # plt.plot(solution_t_temporal, temporal_timeseries, label='fully temporal')
+            model = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=2 * tau / beta,
+                                    networks={2 * tau / beta: (A + B) / 2})
+            solution_t_agg, solution_p = model.solve_model()
+            aggregate_timeseries = np.sum(solution_p, axis=0)
+            integrate_between = integrate_error_ts(temporal_ts=solution_t_temporal, temporal_inf=temporal_timeseries, other_ts=solution_t_agg, other_inf=aggregate_timeseries)
+            integrated_error[p][t] = integrate_between
+    return error_approx_combo, integrated_error
+
+
+# Forgot I did this. 3/30/22
+# res = monotonic_proof()
+# fig, axs = plt.subplots(6, 6)
+# ax_y_counter = 0
+# for i in range(36):
+#     ax_x = i // 6
+#     ax_y = ax_y_counter % 6
+#     ax = axs[ax_x, ax_y]
+#     ax.scatter(res[0][i], res[1][i], color='blue', alpha=(i+4)/40)
+#     ax_y_counter += 1
+# plt.show()
+
+
+###### FIG 2
 N = 100
 G3, A3 = configuration_model_graph(N)
-G6, A6 = erdos_renyi_graph(N, .01)
-
+G6, A6 = erdos_renyi_graph(N, .012)
+taus = np.linspace(0.0001, .6, 50) # .7 for example
 A = A3
 B = A6
 
 beta = .12
-taus = np.linspace(0.0001, 0.7, 50) # .7 for example
+manuscript_fig2(A, B, beta, taus)
+# quick check with B then A
+manuscript_fig2(B, A, beta, taus)
+#########
 
-validation_on(A, B, beta, taus)
+
+taus = np.linspace(0.0001, .6, 50) # .7 for example
+# taus = np.linspace(0.0001, .1, 30) # .7 for example
+# taus = np.linspace(0.0001, 2.0, 50) # completely breaks down once network saturates and matexp isn't a good approximation anymore
+
+# concept_custom_durations(A, B, .02, 7, 10) # TODO ok cool idea would be to use the same plot to do multiple time series on the left side
+# and then to do a bunch of colored squares on the right that show the dimensions of the approximation
+# plt.show()
+# concept_custom_durations(A, B, .05, 7, 10)
+# concept_custom_durations(A, B, .05, 5, 10)
+# concept_custom_durations(B, A, .05, 3, 10)
+# concept_custom_durations(B, A, .05, 5, 10)
+# plt.show()
+# validation_on(A, B, beta, taus)
+# manuscript_fig2(A, B, beta, taus)
 
 G3, A3 = cycle_graph(N)
-G6, A6 = erdos_renyi_graph(N, .01)
-G3, A3 = erdos_renyi_graph(N, .02)
-
-A = A3
-B = A6
+G6, A6 = configuration_model_graph(N)
+G3, A3 = erdos_renyi_graph(N, .01)
+G4, A4 = erdos_renyi_graph(N, .04)
+beta = .06
+# try switching order of who is more dense second
+# multi_panel_fig_idea2([A6, A3, A3,  A4, A3], beta, [4,6, 11, 14, 16])
+multi_panel_fig_idea2([A6, A3, A6, A4], beta, [3,4.5, 7, 9.5])
+plt.show()
 
 beta = .12
 taus = np.linspace(0.0001, 1.0, 50) # .7 for example
+taus = np.linspace(0.0001, 0.5, 50) # .7 for example
+# manuscript_fig2(A3, A4, beta, taus)
 
-validation_on(A, B, beta, taus)
+# validation_on(A6, A3, beta, taus) # less dense first
+# validation_on(A3, A6, beta, taus) # less dense second
+
+# Proof of concept for 0-matrix
+A0 = np.zeros((N,N))
+_, Asparse = erdos_renyi_graph(N, .003)
+concept_custom_durations(A, Asparse, .12, 6, 18)
+plt.show()
+manuscript_fig2(A, A0, beta, taus)
+
+validation_on(A, A0, beta, taus)
+validation_on(A0, A, beta, taus)
