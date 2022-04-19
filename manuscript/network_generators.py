@@ -21,7 +21,7 @@ def erdos_renyi_graph(N, p):
 
 
 def configuration_model_graph(N):
-    degree_distribution = [0, 20 / 100, 65 / 100, 0 / 100, 0, 0, 0, 10 / 100, 0, 0, 0, 0, 5 / 100]
+    degree_distribution = [1/100, 18 / 100, 58 / 100, 1 / 100, 1/100, 1/100, 1/100, 10 / 100, 1/100, 1/100, 1/100, 1/100, 5 / 100]
     got_config_model = False
     while not got_config_model:
         try:
