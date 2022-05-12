@@ -148,3 +148,16 @@ def total_error_as_fn_of(betas, iter_range, a_temporal_network):
         tce_matrix[b] = error_results["tce_all"]
     results = {"difference_matrix": difference_matrix, "tce": tce_matrix}
     return results
+
+def plot_pairwise_error(snapshots):
+    # Save the pairwise errors and make a cool plot
+    compressor = Compressor()
+    start_times = []
+    epsilons = []
+    for s in range(len(snapshots)-1):
+        s1 = snapshots[s]
+        s2 = snapshots[s+1]
+        e = compressor.epsilon(s1, s2, error_type="combined")
+        start_times.append(s1.start_time)
+        epsilons.append(e)
+    return start_times, epsilons

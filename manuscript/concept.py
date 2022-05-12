@@ -6,7 +6,13 @@ from scipy.linalg import expm
 from manuscript.simulation_helpers import *
 from manuscript.network_generators import *
 from manuscript.plotters import *
+import matplotlib
 plt.rcParams
+matplotlib.rcParams.update({'font.size': 12})
+
+
+cmr_map = sns.color_palette('CMRmap_r', 6)
+type_colors = {'temp': 'grey', 'even': cmr_map[1], 'algo': cmr_map[5], 'snap1': cmr_map[2], 'snap2': cmr_map[3]}
 
 
 def multi_panel_fig_idea2(snapshots, beta, increments):
@@ -266,8 +272,6 @@ def concept_custom_durations(A, B, beta, tA, tB):
 
 
 def manuscript_fig2(A, B, beta, taus):
-    rd_bu = sns.color_palette('RdBu')
-    algo_blue = rd_bu[5]
     error_approx_terminal = np.zeros(len(taus))
     error_approx_halftime = np.zeros(len(taus))
     error_approx_combo = np.zeros(len(taus))
@@ -281,10 +285,10 @@ def manuscript_fig2(A, B, beta, taus):
     det_aggs_halftime = np.zeros(len(taus))
     integral_solutions = np.zeros(len(taus))
 
-    type_colors = {'temp': 'grey', 'even': "#FFC626", 'algo': "#00A4D4"}
+    # type_colors = {'temp': 'grey', 'even': "#FFC626", 'algo': "#00A4D4"}
     tau_color = sns.color_palette('Greys', len(taus))
 
-    fig, ax = plt.subplots(2, 2)
+    fig, ax = plt.subplots(2, 2, figsize=(6,6))
     for t, tau in enumerate(taus):
         A_lay = Snapshot(0, tau / beta, beta, A)
         B_lay = Snapshot(tau / beta, 2 * tau / beta, beta, B)
@@ -329,8 +333,8 @@ def manuscript_fig2(A, B, beta, taus):
 
 
     midpoint = int(len(aggregate_timeseries) / 2)
-    ax[0, 1].plot(solution_t_temporal[:midpoint], temporal_timeseries[:midpoint], color='orange', lw=1) #'m'
-    ax[0, 1].plot(solution_t_temporal[midpoint:], temporal_timeseries[midpoint:], color='green', lw=1)
+    ax[0, 1].plot(solution_t_temporal[:midpoint], temporal_timeseries[:midpoint], color=type_colors['snap1'], lw=1) #'m'
+    ax[0, 1].plot(solution_t_temporal[midpoint:], temporal_timeseries[midpoint:], color=type_colors['snap2'], lw=1)
     ax[0, 1].plot(solution_t_agg, aggregate_timeseries, color=tau_color[t], ls='--', lw=1)
     ax[0, 1].vlines(solution_t_temporal[-1], ymin=aggregate_timeseries[-1],
                     ymax=temporal_timeseries[-1], color='k', lw=1)
@@ -340,10 +344,10 @@ def manuscript_fig2(A, B, beta, taus):
                     color='k', lw=1)
     ax[0, 1].fill_between(solution_t_temporal, aggregate_timeseries, temporal_timeseries, color=tau_color[t],
                           alpha=0.25)
-    ax[0, 1].text(tau / beta - 3, temporal_timeseries[midpoint] + 3, 'temporal solution')
+    ax[0, 1].text(tau / beta - 4, temporal_timeseries[midpoint] + 3, 'temporal solution')
     ax[0, 1].text(tau / beta, aggregate_timeseries[midpoint] - 2, 'aggregate solution')
     ax[0, 1].text(tau / beta, temporal_timeseries[midpoint] - .2*temporal_timeseries[midpoint], '$\\epsilon_{MID}$')
-    ax[0, 1].text(2*tau / beta-1, temporal_timeseries[-1] - .1*temporal_timeseries[-1], '$\\epsilon_{END}$')
+    ax[0, 1].text(2*tau / beta, temporal_timeseries[-1] - .1*temporal_timeseries[-1], '$\\epsilon_{END}$')
 
 
 
@@ -352,55 +356,55 @@ def manuscript_fig2(A, B, beta, taus):
     temporal_end = np.full( len(solution_t_temporal), temporal_timeseries[-1])
     aggregate_mid = np.full(len(solution_t_temporal), aggregate_timeseries[midpoint])
     aggregate_end = np.full(len(solution_t_temporal), aggregate_timeseries[-1])
-    ax[0, 1].fill_between(solution_t_temporal, temporal_mid, aggregate_mid, color=algo_blue,
+    ax[0, 1].fill_between(solution_t_temporal, temporal_mid, aggregate_mid, color=type_colors['algo'],
                           alpha=0.25)
-    ax[0, 1].fill_between(solution_t_temporal, temporal_end, aggregate_end, color=algo_blue,
+    ax[0, 1].fill_between(solution_t_temporal, temporal_end, aggregate_end, color=type_colors['algo'],
                           alpha=0.25)
 
 
     ####
 
-    fig2, ax2 = plt.subplots()
-    midpoint = int(len(aggregate_timeseries) / 2)
-    ax2.plot(solution_t_temporal[:midpoint], temporal_timeseries[:midpoint], color='orange', lw=1)
-    ax2.plot(solution_t_temporal[midpoint:], temporal_timeseries[midpoint:], color='green', lw=1)
-    ax2.plot(solution_t_agg, aggregate_timeseries, color=tau_color[t], ls='--', lw=1)
-    ax2.vlines(solution_t_temporal[-1], ymin=aggregate_timeseries[-1],
-                    ymax=temporal_timeseries[-1], color='crimson', lw=1)
-    ax2.vlines(tau / beta,
-                    ymin=aggregate_timeseries[midpoint],
-                    ymax=temporal_timeseries[midpoint],
-                    color='crimson', lw=1)
-    ax2.fill_between(solution_t_temporal[:midpoint],
-                     np.full(len(solution_t_temporal[:midpoint]), aggregate_timeseries[midpoint]),
-                     np.full(len(solution_t_temporal[:midpoint]), temporal_timeseries[midpoint]),
-                     color='gold', alpha=0.5)
-                    # hatch='///', zorder=2, fc='c',alpha=0.2)
-    ax2.fill_between(solution_t_temporal[midpoint:],
-                     np.full(len(solution_t_temporal[midpoint:]), aggregate_timeseries[midpoint]),
-                     np.full(len(solution_t_temporal[midpoint:]), temporal_timeseries[midpoint]),
-                     color='gold', alpha=0.5)
-                    # hatch='///', zorder=2, fc='c',)
-    ax2.fill_between(solution_t_temporal,
-                     np.full(len(solution_t_temporal), aggregate_timeseries[-1]),
-                     np.full(len(solution_t_temporal), temporal_timeseries[-1]),
-                     color='green', alpha=0.5)
-                     # hatch='///', zorder=2, fc='c',)
+    # fig2, ax2 = plt.subplots()
+    # midpoint = int(len(aggregate_timeseries) / 2)
+    # ax2.plot(solution_t_temporal[:midpoint], temporal_timeseries[:midpoint], color=type_colors['snap1'], lw=1)
+    # ax2.plot(solution_t_temporal[midpoint:], temporal_timeseries[midpoint:], color=type_colors['snap2'], lw=1)
+    # ax2.plot(solution_t_agg, aggregate_timeseries, color=tau_color[t], ls='--', lw=1)
+    # ax2.vlines(solution_t_temporal[-1], ymin=aggregate_timeseries[-1],
+    #                 ymax=temporal_timeseries[-1], color='crimson', lw=1)
+    # ax2.vlines(tau / beta,
+    #                 ymin=aggregate_timeseries[midpoint],
+    #                 ymax=temporal_timeseries[midpoint],
+    #                 color='crimson', lw=1)
+    # ax2.fill_between(solution_t_temporal[:midpoint],
+    #                  np.full(len(solution_t_temporal[:midpoint]), aggregate_timeseries[midpoint]),
+    #                  np.full(len(solution_t_temporal[:midpoint]), temporal_timeseries[midpoint]),
+    #                  color='gold', alpha=0.5)
+    #                 # hatch='///', zorder=2, fc='c',alpha=0.2)
+    # ax2.fill_between(solution_t_temporal[midpoint:],
+    #                  np.full(len(solution_t_temporal[midpoint:]), aggregate_timeseries[midpoint]),
+    #                  np.full(len(solution_t_temporal[midpoint:]), temporal_timeseries[midpoint]),
+    #                  color='gold', alpha=0.5)
+    #                 # hatch='///', zorder=2, fc='c',)
+    # ax2.fill_between(solution_t_temporal,
+    #                  np.full(len(solution_t_temporal), aggregate_timeseries[-1]),
+    #                  np.full(len(solution_t_temporal), temporal_timeseries[-1]),
+    #                  color='green', alpha=0.5)
+    #                  # hatch='///', zorder=2, fc='c',)
 
 
-    sns.distplot([sum(A[n]) for n in range(N)], label='snapshot 1', color='orange', ax=ax[0,0], hist=False, kde_kws={'clip': (0.0, 20.0), 'bw':1.1})
-    sns.distplot([sum(B[n]) for n in range(N)], label='snapshot 2', color='green', ax=ax[0,0], hist=False, kde_kws={'clip': (0.0, 20.0), 'bw':1.1})
+    sns.distplot([sum(A[n]) for n in range(N)], label='snapshot 1', color=type_colors['snap1'], ax=ax[0,0], hist=False, kde_kws={'clip': (0.0, 20.0), 'bw':1.1})
+    sns.distplot([sum(B[n]) for n in range(N)], label='snapshot 2', color=type_colors['snap2'], ax=ax[0,0], hist=False, kde_kws={'clip': (0.0, 20.0), 'bw':1.1})
     mean_snapshot1 = np.mean([sum(A[n]) for n in range(N)])
     mean_snapshot2 = np.mean([sum(B[n]) for n in range(N)])
-    ax[0,0].axvline(mean_snapshot1, ls='--', color='orange')
-    ax[0,0].axvline(mean_snapshot2, ls='--', color='green')
+    ax[0,0].axvline(mean_snapshot1, ls='--', color=type_colors['snap1'])
+    ax[0,0].axvline(mean_snapshot2, ls='--', color=type_colors['snap2'])
     ax[0,0].set_xticks([0, 2, 4, 6, 8, 10, 12, 14])
     ax[0,0].legend(frameon=False)
     ax[0,0].set_xlim([0,18])
 
-    fig3, ax3 = plt.subplots()
+    # fig3, ax3 = plt.subplots()
     ### ALT 0,1 AX
-    ax[1,1].scatter(integral_solutions,error_approx_combo, color=algo_blue,
+    ax[1,1].scatter(integral_solutions,error_approx_combo, color=type_colors['algo'],
                     marker='s', alpha=0.3,
                     label='increasing $\\beta\\cdot\\delta t$')
     # ax[1,1].scatter(taus,error_approx_combo/max(error_approx_combo), color=algo_blue,
@@ -418,14 +422,14 @@ def manuscript_fig2(A, B, beta, taus):
     #####
     # diff_matexp = matexp_temp - matexp_agg
     # diff_det = det_temp - det_agg
-    # Fig 2a: plot tau vs det_temp, det_agg, matexp_temp, matexp_agg
-    ax3.plot(taus, det_temps, label='ODE, temporal', alpha=0.9, color='black', ls='-')
-    ax3.plot(taus, det_aggs, label='ODE, aggregate', alpha=0.6, color='black', ls='--')
-    ax3.plot(taus, matexp_temps, label='$exp(\\beta\\delta t B)exp(\\beta\\delta t A)$', alpha=0.5, color='grey', ls='-')
-    ax3.plot(taus, matexp_aggs, label='$exp(\\beta(2\\delta t) \\overline{A+B})$', alpha=0.5, color='grey', ls='--')
-    ax3.set_xlabel('$\\beta \\delta t$')
-    ax3.set_ylabel('number nodes infected \nafter $2\\delta t$ time')
-    ax3.legend(frameon=False)
+    # # Fig 2a: plot tau vs det_temp, det_agg, matexp_temp, matexp_agg
+    # ax3.plot(taus, det_temps, label='ODE, temporal', alpha=0.9, color='black', ls='-')
+    # ax3.plot(taus, det_aggs, label='ODE, aggregate', alpha=0.6, color='black', ls='--')
+    # ax3.plot(taus, matexp_temps, label='$exp(\\beta\\delta t B)exp(\\beta\\delta t A)$', alpha=0.5, color='grey', ls='-')
+    # ax3.plot(taus, matexp_aggs, label='$exp(\\beta(2\\delta t) \\overline{A+B})$', alpha=0.5, color='grey', ls='--')
+    # ax3.set_xlabel('$\\beta \\delta t$')
+    # ax3.set_ylabel('number nodes infected \nafter $2\\delta t$ time')
+    # ax3.legend(frameon=False)
 
     ## SQUARE 1,1 option
     # ax[1,1].scatter((np.abs(det_temps - det_aggs) + np.abs(det_temps_halftime - det_aggs_halftime)),
@@ -435,8 +439,8 @@ def manuscript_fig2(A, B, beta, taus):
     # ax[1,1].plot(error_approx_combo/(2*taus/beta), error_approx_combo/(2*taus/beta), color='grey', ls=':')
 
     ## ALT SQUARE 1,1
-    ax[1,0].plot(taus,error_approx_combo/ (2 * taus / beta), ls='-.', lw=2, color=algo_blue, label='prediction, $\\epsilon_{MID}+\\epsilon_{END}$')
-    ax[1,0].plot(taus,  (np.abs(det_temps - det_aggs) + np.abs(det_temps_halftime - det_aggs_halftime)), ls='-', lw=2, color='k', label='true solution, $\\epsilon_{MID}+\\epsilon_{END}$')
+    ax[1,0].plot(taus,error_approx_combo/ (2 * taus / beta), ls='-.', lw=2, color=type_colors['algo'], label='prediction, $\\epsilon_{MID}+\\epsilon_{END}$')
+    ax[1,0].plot(taus,  (np.abs(det_temps - det_aggs) + np.abs(det_temps_halftime - det_aggs_halftime)), ls='-', lw=2, color='k', alpha=0.6, label='true solution, $\\epsilon_{MID}+\\epsilon_{END}$')
     ax[1,0].set_xlabel('$\\beta \\cdot \\delta t$')
     ax[1,0].set_ylabel('Infected nodes')
     ax[1,0].legend(frameon=False, loc='upper left')
@@ -460,6 +464,8 @@ def manuscript_fig2(A, B, beta, taus):
     ax[1,1].spines['top'].set_visible(False)
 
     plt.tight_layout()
+    plt.savefig('./fig2_04-28-22.png')
+    plt.savefig('./fig2_04-28-22.svg', fmt='svg')
     # fig.savefig('../results/concept_fig2.png')
     # fig.savefig('../results/concept_fig2.svg', fmt='svg')
     plt.show()
