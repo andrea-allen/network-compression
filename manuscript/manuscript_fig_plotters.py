@@ -355,8 +355,6 @@ result_array = np.loadtxt('./results/synthetic_error_integrals.txt', delimiter='
 results = {'iter_range': result_array[0], 'even_error_norm': result_array[1], 'opt_error_norm': result_array[2], 'tce_all': result_array[3]}
 figure_3({"one_round_results": results_one_round, "error_difference_results": results})
 plt.tight_layout()
-# plt.savefig('fig3_04-28-22.png')
-# plt.savefig('fig3_04-28-22.svg', fmt='svg')
 plt.show()
 
 """
@@ -367,7 +365,5 @@ result_array = np.loadtxt('./results/hospital_error_integrals.txt', delimiter=',
 results = {'iter_range': result_array[0], 'even_error_norm': result_array[1], 'opt_error_norm': result_array[2], 'tce_all': result_array[3]}
 figure_4({"one_round_results": results_one_round, "error_difference_results": results})
 plt.tight_layout()
-# plt.savefig('fig4_04-28-22.png')
-# plt.savefig('fig4_04-28-22.svg', fmt='svg')
 plt.show()
 
