@@ -270,7 +270,9 @@ def concept_custom_durations(A, B, beta, tA, tB):
     ax2[1].legend(frameon=False, loc='lower right')
 
 
-
+"""
+Fig. 2 in paper
+"""
 def manuscript_fig2(A, B, beta, taus):
     error_approx_terminal = np.zeros(len(taus))
     error_approx_halftime = np.zeros(len(taus))
