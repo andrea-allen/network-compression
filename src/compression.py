@@ -71,7 +71,6 @@ class Compressor:
     def _even_compression(temporal_net, desired_num_layers):
         new_networks = []
         snapshots_boundaries = list([int(i) for i in np.linspace(0, temporal_net.length, desired_num_layers + 1)])
-        # 0 20 40 60 for a 60 layer network
         idx = 0
         for b in range(len(snapshots_boundaries) - 1):
             current_aggregate = temporal_net.snapshots[snapshots_boundaries[b]]
@@ -106,7 +105,6 @@ class Compressor:
             A = snapshot.scaled_matrix()
             B = other_snapshot.scaled_matrix()
 
-            #######
             BA = B @ A
             AB = A @ B
             error_terminal = (1 / 2) * (BA - AB) \
@@ -118,58 +116,36 @@ class Compressor:
             e_terminal = np.sum(np.abs(error_terminal).dot(P0))
 
             agg_mat = (snapshot.duration * snapshot.A + other_snapshot.duration * other_snapshot.A) / (snapshot.duration + other_snapshot.duration)
-            # full_agg = sl.expm(snapshot.beta * snapshot.duration * agg_mat) #FULL MATRIX
-            #### APPROXIMATIONS
-            # A_scaled = layer.beta * layer.duration * layer.A
-            approx_A_temp = A + (A@A)/2 + (A@A@A)/6 \
-                            # + (A_scaled@A_scaled@A_scaled@A_scaled)/24 \
-                            # + (A_scaled@A_scaled@A_scaled@A_scaled@A_scaled)/(5*24)
+            approx_A_temp = A + (A@A)/2 + (A@A@A)/6
+
             agg_scaled = snapshot.beta * snapshot.duration * agg_mat
-            approx_Agg = agg_scaled + (agg_scaled@agg_scaled)/2 + (agg_scaled@agg_scaled@agg_scaled)/6 \
-                         # + (agg_scaled@agg_scaled@agg_scaled@agg_scaled)/24 \
-                         # + (agg_scaled@agg_scaled@agg_scaled@agg_scaled@agg_scaled)/(5*24)
+            approx_Agg = agg_scaled + (agg_scaled@agg_scaled)/2 + (agg_scaled@agg_scaled@agg_scaled)/6
             D = approx_A_temp - approx_Agg
 
-            ######
-            # D = (full_A_temp - full_agg) #FULL MATRIX
             error = D
             e_halftime = np.sum(np.abs(error).dot(P0))
             if np.isnan(e_terminal) or np.isnan(e_halftime):
                 print('STOP, nans')
             return (e_halftime + e_terminal) * (snapshot.duration + other_snapshot.duration)
 
-        elif error_type.lower()=='terminal':
+        elif error_type.lower() == 'terminal':
             A = snapshot.scaled_matrix()
             B = other_snapshot.scaled_matrix()
-
-            #######
             BA = B @ A
             AB = A @ B
             error = (1 / 2) * (BA - AB) \
                     + (1 / 12) * ((B @ BA) + (A @ AB)
                                   + (A @ (B @ B)) + (B @ (A @ A))) \
                     - (1 / 6) * ((B @ AB) + (A @ BA))
-            ########
-        elif error_type.lower()=='halftime':
-            # Using full matexp
-            # full_A_temp = sl.expm(snapshot.beta * snapshot.duration * snapshot.A) #FULL MATRIX
-            agg_mat = (snapshot.duration * snapshot.A + other_snapshot.duration * other_snapshot.A) / (snapshot.duration + other_snapshot.duration)
-            # full_agg = sl.expm(snapshot.beta * snapshot.duration * agg_mat) #FULL MATRIX
-            #### APPROXIMATIONS
-            A_scaled = snapshot.beta * snapshot.duration * snapshot.A
-            approx_A_temp = A_scaled + (A_scaled@A_scaled)/2 + (A_scaled@A_scaled@A_scaled)/6 \
-                            # + (A_scaled@A_scaled@A_scaled@A_scaled)/24 \
-                            # + (A_scaled@A_scaled@A_scaled@A_scaled@A_scaled)/(5*24)
-            agg_scaled = snapshot.beta * snapshot.duration * agg_mat
-            approx_Agg = agg_scaled + (agg_scaled@agg_scaled)/2 + (agg_scaled@agg_scaled@agg_scaled)/6 \
-                         # + (agg_scaled@agg_scaled@agg_scaled@agg_scaled)/24 \
-                         # + (agg_scaled@agg_scaled@agg_scaled@agg_scaled@agg_scaled)/(5*24)
-            D = approx_A_temp - approx_Agg
+        elif error_type.lower() == 'halftime':
 
-            ######
-            # D = (full_A_temp - full_agg) #FULL MATRIX
+            agg_mat = (snapshot.duration * snapshot.A + other_snapshot.duration * other_snapshot.A) / (snapshot.duration + other_snapshot.duration)
+            A_scaled = snapshot.beta * snapshot.duration * snapshot.A
+            approx_A_temp = A_scaled + (A_scaled@A_scaled)/2 + (A_scaled@A_scaled@A_scaled)/6
+            agg_scaled = snapshot.beta * snapshot.duration * agg_mat
+            approx_Agg = agg_scaled + (agg_scaled@agg_scaled)/2 + (agg_scaled@agg_scaled@agg_scaled)/6
+            D = approx_A_temp - approx_Agg
             error = D
-            #############
 
         P0 = snapshot.dd_normalized
 
