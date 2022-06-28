@@ -1,5 +1,3 @@
-import numpy as np
-from src.temporalnetwork import *
 from src.compression import *
 from src.solvers import *
 

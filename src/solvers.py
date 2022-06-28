@@ -32,8 +32,6 @@ class TemporalSIModel:
         time_series_result = []
         node_probabilities = [[] for n in range(self.N)]
         steps_per_interval = max(int(np.round(total_time_steps/len(self.switch_times), 0)),20)
-        # steps_per_interval = 5
-        # print(steps_per_interval)
         p_states = [self.y_current]
         for switchtime in self.switch_times:
             self.current_switch_time = switchtime
@@ -41,19 +39,12 @@ class TemporalSIModel:
                 solve_for_timesteps = np.linspace(self.start_time, switchtime, steps_per_interval)
             else:
                 solve_for_timesteps = np.arange(self.start_time, switchtime, custom_t_inc)
-            # switchtime_solution = scipy.integrate.solve_ivp(self.odes_si, t_span=[self.start_time,
-            #                                                                       switchtime],
-            #                                                 y0=self.y_current)
-            # solve_for_timesteps = np.linspace(self.start_time, switchtime, steps_per_interval)
-            # solve_for_timesteps = custom_t
             switchtime_solution = scipy.integrate.odeint(self.odes_si,
                                                          y0=self.y_current,
                                                          t=solve_for_timesteps)
-            # time_series_result.extend(switchtime_solution.t)
             time_series_result.extend(solve_for_timesteps)
             for i in range(self.N):
                 node_probabilities[i].extend(list(switchtime_solution[:, i]))
-            # new_initial_p_vec = [switchtime_solution.y[i][-1] for i in range(len(switchtime_solution.y))] # for ivp code
             new_initial_p_vec = [switchtime_solution[:,i][-1] for i in range(self.N)]
             self.start_time = switchtime
             self.y_current = new_initial_p_vec
@@ -61,6 +52,7 @@ class TemporalSIModel:
         if return_p_vecs:
             return time_series_result, np.array(node_probabilities), p_states
         return time_series_result, np.array(node_probabilities)
+
 
 def digitize_solution(time_vector, infected, number_layers, t_interval):
     digitized = np.digitize(np.array(time_vector), np.linspace(0,number_layers*t_interval,50))

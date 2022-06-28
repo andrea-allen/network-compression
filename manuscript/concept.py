@@ -466,8 +466,9 @@ def manuscript_fig2(A, B, beta, taus):
     ax[1,1].spines['top'].set_visible(False)
 
     plt.tight_layout()
-    plt.savefig('./fig2_04-28-22.png')
-    plt.savefig('./fig2_04-28-22.svg', fmt='svg')
+    plt.savefig('fig2_05-23-22.pdf')
+    # plt.savefig('./fig2_04-28-22.png')
+    # plt.savefig('./fig2_04-28-22.svg', fmt='svg')
     # fig.savefig('../results/concept_fig2.png')
     # fig.savefig('../results/concept_fig2.svg', fmt='svg')
     plt.show()
@@ -685,6 +686,7 @@ B = A6
 
 beta = .12
 manuscript_fig2(A, B, beta, taus)
+# plt.savefig('fig2_05-23-22.pdf')
 # quick check with B then A
 manuscript_fig2(B, A, beta, taus)
 #########
