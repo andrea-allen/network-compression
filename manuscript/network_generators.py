@@ -147,29 +147,44 @@ def dataset_statistics(filename):
     ## WANT: Distribution of contacts per timestamp
     ## Distribution of frequency of the same contact
     histo = plt.hist(df.groupby(['i', 'j']).size(), bins='auto')
-    fig, ax = plt.subplots(1, 4)
-    fig.set_size_inches(8,4)
-    ax[0].hist(df.groupby(['t']).size(), bins='auto')  # this is how many contacts per timestep
+    fig, ax = plt.subplots(4, 1)
+    _, ax1 = plt.subplots()
+    _, ax2 = plt.subplots()
+    _, ax3 = plt.subplots()
+    _, ax4 = plt.subplots()
+    ax = [ax1, ax2, ax3, ax4]
+    # fig.set_size_inches(8,4)
+    ax[0].hist(df.groupby(['t']).size(), bins='auto') # this is how many contacts per timestep
+    info['contacts_per_t_mean'] = np.mean(df.groupby(['t']).size())
+    info['contacts_per_t_var'] = np.var(df.groupby(['t']).size())
     ax[0].semilogy()
-    ax[0].set_xlabel('Contacts (edges)\n per timestamp')
+    ax[0].set_xlabel('Contacts \n per timestamp')
     ax[0].set_ylabel('Distribution (log)')
     ax[1].scatter(np.log10(np.arange(len(histo[0]))), np.log10(histo[0]), s=8, color='blue')
     ax[1].set_xlabel('Frequency of same\n contact (log scale)')
     ax[1].set_ylabel('Distribution (log)')
+    info['same_contacts_occurance_mean'] = np.mean(df.groupby(['i', 'j']).size())
+    info['same_contacts_occurance_var'] = np.var(df.groupby(['i', 'j']).size())
     static_dd = df.groupby('i')['j'].nunique()
     ax[2].hist(static_dd, color='green', alpha=0.6, density='true', label=f'<k>={np.round(np.mean(static_dd), 1)}')
     # check: set(df.where(df['i']==122).dropna()['j'])
-    ax[2].set_xlabel('Degree in static network')
+    ax[2].set_xlabel('Number of unique contacts')
+    # ax[2].set_xlabel('Degree in static network')
     ax[2].set_ylabel('Distribution')
     ax[2].legend()
+    info['unique_contacts_mean'] = np.mean(static_dd)
+    info['unique_contacts_var'] = np.var(static_dd)
     durations = df['t'].diff(1).dropna() # really weird giant duration gap?
     ax[3].scatter(np.arange(len(durations)), durations + 1, s=8, color='green') # +1 to make log scale work, still effectively 0
     ax[3].semilogy()
     ax[3].set_xlabel('Time steps \nin dataset')
     ax[3].set_ylabel('Time between consecutive timestamps')
+    info['durations_mean'] = np.mean(durations)
+    info['durations_var'] = np.var(durations)
     plt.tight_layout(0.1)
     plt.show()
 
+    table = pd.DataFrame(info.items()).to_latex()
     return info
 
 
