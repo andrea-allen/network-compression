@@ -50,7 +50,7 @@ if HOSP_DAT:
     """
     Assessing compression from 1,000 snapshots to 10 vs 200
     """
-    num_snapshots = 1000
+    # num_snapshots = 1000
     # results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(total_time/num_snapshots), .000015, len(hospital_snapshots), iters=980)
     # results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(total_time/num_snapshots), .00009, len(hospital_snapshots), iters=800)
     # f = open('hospital_data_1000_to_200.json', "w")
@@ -88,11 +88,30 @@ if HOSP_DAT:
     Panel (b) for Fig. 4 experiment.
     Solving single round of 200 snapshots -> 10 snapshots for Fig.4 in manuscript panel (b)
     """
-    # results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(total_time/num_snapshots), .000015, len(hospital_snapshots), iters=190)
+    results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME/num_snapshots),
+                                  .000015, len(hospital_snapshots), iters=190, order=1, norm=2)
     # f = open('hospital_data.json', "w")
     # json.dump(results_one_round, f)
     # f.close()
-    results_one_round = json.load(open('results/hospital_data.json', "r"))
+    # results_one_round = json.load(open('results/hospital_data.json', "r"))
+    plot_one_round(results_one_round)
+    plt.show()
+    results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME / num_snapshots),
+                                  .000015, len(hospital_snapshots), iters=190, order=1, norm=2)
+    plot_one_round(results_one_round)
+
+    results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME / num_snapshots),
+                                  .000015, len(hospital_snapshots), iters=192, order=3, norm=2)
+    plot_one_round(results_one_round)
+    results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME / num_snapshots),
+                                  .000015, len(hospital_snapshots), iters=192, order=1, norm=2)
+    plot_one_round(results_one_round)
+
+    results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME / num_snapshots),
+                                  .000015, len(hospital_snapshots), iters=194, order=3, norm=2)
+    plot_one_round(results_one_round)
+    results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME / num_snapshots),
+                                  .000015, len(hospital_snapshots), iters=194, order=1, norm=2)
     plot_one_round(results_one_round)
     plt.show()
 
