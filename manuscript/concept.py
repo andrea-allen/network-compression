@@ -80,6 +80,7 @@ def multi_panel_fig_idea2(snapshots, beta, increments):
         start_x = increments[i]
     ax.legend(frameon=False, loc='upper left')
 
+
 def multi_panel_fig_idea(snapshots, beta, increments):
     S1 = Snapshot(0, increments[0], beta, snapshots[0])
     y_init = S1.dd_normalized
@@ -191,7 +192,6 @@ def multi_panel_fig_idea(snapshots, beta, increments):
     ax2[0].set_ylabel('Infected nodes')
 
 
-
 def concept_custom_durations(A, B, beta, tA, tB):
     A_lay = Snapshot(0, tA, beta, A)
     B_lay = Snapshot(tA, tB, beta, B)
@@ -296,7 +296,7 @@ def manuscript_fig2(A, B, beta, taus):
         B_lay = Snapshot(tau / beta, 2 * tau / beta, beta, B)
         epsilon_terminal = Compressor.epsilon(A_lay, B_lay, error_type='terminal')
         epsilon_halftime = Compressor.epsilon(A_lay, B_lay, error_type='halftime')
-        epsilon_combo = Compressor.epsilon(A_lay, B_lay, error_type='combined')
+        epsilon_combo = Compressor.epsilon(A_lay, B_lay, error_type='combined', order=2, norm=2)
         error_approx_terminal[t] = epsilon_terminal
         error_approx_halftime[t] = epsilon_halftime
         error_approx_combo[t] = epsilon_combo
@@ -332,7 +332,6 @@ def manuscript_fig2(A, B, beta, taus):
         integrate_between = integrate_error_ts(temporal_ts=solution_t_temporal, temporal_inf=temporal_timeseries,
                                                other_ts=solution_t_agg, other_inf=aggregate_timeseries)
         integral_solutions[t] = integrate_between
-
 
     midpoint = int(len(aggregate_timeseries) / 2)
     ax[0, 1].plot(solution_t_temporal[:midpoint], temporal_timeseries[:midpoint], color=type_colors['snap1'], lw=1) #'m'
@@ -393,7 +392,7 @@ def manuscript_fig2(A, B, beta, taus):
     #                  color='green', alpha=0.5)
     #                  # hatch='///', zorder=2, fc='c',)
 
-
+    # Degree distributions plots
     sns.distplot([sum(A[n]) for n in range(N)], label='snapshot 1', color=type_colors['snap1'], ax=ax[0,0], hist=False, kde_kws={'clip': (0.0, 20.0), 'bw':1.1})
     sns.distplot([sum(B[n]) for n in range(N)], label='snapshot 2', color=type_colors['snap2'], ax=ax[0,0], hist=False, kde_kws={'clip': (0.0, 20.0), 'bw':1.1})
     mean_snapshot1 = np.mean([sum(A[n]) for n in range(N)])
@@ -406,6 +405,7 @@ def manuscript_fig2(A, B, beta, taus):
 
     # fig3, ax3 = plt.subplots()
     ### ALT 0,1 AX
+    # Integral between curves vs approximation error term, showing not equality or linearity but monotonicity
     ax[1,1].scatter(integral_solutions,error_approx_combo, color=type_colors['algo'],
                     marker='s', alpha=0.3,
                     label='increasing $\\beta\\cdot\\delta t$')
@@ -466,13 +466,75 @@ def manuscript_fig2(A, B, beta, taus):
     ax[1,1].spines['top'].set_visible(False)
 
     plt.tight_layout()
-    plt.savefig('fig2_05-23-22.pdf')
+    # plt.savefig('fig2_05-23-22.pdf')
     # plt.savefig('./fig2_04-28-22.png')
     # plt.savefig('./fig2_04-28-22.svg', fmt='svg')
     # fig.savefig('../results/concept_fig2.png')
     # fig.savefig('../results/concept_fig2.svg', fmt='svg')
-    plt.show()
+    # plt.show()
 
+## 7/15
+def order_norm_test(A1, A2, beta, orders, norms, ax):
+    taus = np.linspace(0.0001, beta*5, 50)  # .7 for example
+
+    xi_order3 = np.zeros(len(taus))
+    xi_order2 = np.zeros(len(taus))
+    det_temps = np.zeros(len(taus))
+    det_temps_halftime = np.zeros(len(taus))
+    det_aggs = np.zeros(len(taus))
+    det_aggs_halftime = np.zeros(len(taus))
+    integral_solutions = np.zeros(len(taus))
+
+    for t, tau in enumerate(taus):
+        # Theoretical error
+        A_snap = Snapshot(0, tau / beta, beta, A1)
+        B_snap = Snapshot(tau / beta, 2 * tau / beta, beta, A2)
+        epsilon_combo = Compressor.epsilon(A_snap, B_snap, error_type='combined', order=orders[0], norm=norms[0])
+        xi_order2[t] = epsilon_combo
+        epsilon_combo = Compressor.epsilon(A_snap, B_snap, error_type='combined', order=orders[1], norm=norms[1])
+        xi_order3[t] = epsilon_combo
+        # Temporal solution
+        y_init = A_snap.dd_normalized
+        temp_model = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=2 * tau / beta,
+                                     networks={tau / beta: A1, 2 * tau / beta: A2})
+        solution_t_temporal, solution_p = temp_model.solve_model()
+        temporal_timeseries = np.sum(solution_p, axis=0)
+        final_temp = temporal_timeseries[-1]
+        det_temps[t] = final_temp
+        det_temps_halftime[t] = temporal_timeseries[int(len(temporal_timeseries) / 2)]
+        # plt.plot(solution_t_temporal, temporal_timeseries, label='fully temporal')
+        model = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=2 * tau / beta,
+                                networks={2 * tau / beta: (A1 + A2) / 2})
+        solution_t_agg, solution_p = model.solve_model()
+        aggregate_timeseries = np.sum(solution_p, axis=0)
+        # plt.show()
+        final_agg = aggregate_timeseries[-1]
+        det_aggs[t] = final_agg
+        det_aggs_halftime[t] = aggregate_timeseries[int(len(aggregate_timeseries) / 2)]
+
+        # Integral
+        integrate_between = integrate_error_ts(temporal_ts=solution_t_temporal, temporal_inf=temporal_timeseries,
+                                               other_ts=solution_t_agg, other_inf=aggregate_timeseries)
+        integral_solutions[t] = integrate_between
+    ax[0].plot(taus,xi_order2/ (2 * taus / beta), ls='-.', lw=2, color=type_colors['algo'],
+               label=f'Order {orders[0]} Norm {norms[0]}, $\\epsilon(MID)+\\epsilon(END)$')
+    ax[0].plot(taus, xi_order3 / (2 * taus / beta), ls='-.', lw=2, color=type_colors['snap2'],
+               label=f'Order {orders[1]} Norm {norms[1]}, $\\epsilon(MID)+\\epsilon(END)$')
+    ax[0].plot(taus,  (np.abs(det_temps - det_aggs) + np.abs(det_temps_halftime - det_aggs_halftime)), ls='-', lw=2, color='k', alpha=0.6, label='true solution, $\\epsilon_{MID}+\\epsilon_{END}$')
+    ax[0].set_xlabel('$\\beta \\cdot \\delta t$')
+    ax[0].set_ylabel('Infected nodes')
+    ax[0].legend(frameon=False, loc='upper left')
+
+    ax[1].scatter(integral_solutions,xi_order2, color=type_colors['algo'],
+                    marker='s', alpha=0.3,
+                    label=f'Order {orders[0]} Norm {norms[0]}: increasing $\\beta\\cdot\\delta t$')
+    ax[1].scatter(integral_solutions, xi_order3, color=type_colors['snap2'],
+                  marker='s', alpha=0.3,
+                  label=f'Order {orders[1]} Norm {norms[1]}: increasing $\\beta\\cdot\\delta t$')
+    ax[1].set_xlabel('True solution integrated error')
+    ax[1].set_ylabel('Error measure $\\xi_{A,B}$')
+    ax[1].legend(frameon=False, loc='upper left')
+    plt.show()
 
 def validation_on(A, B, beta, taus):
     error_approx_terminal = np.zeros(len(taus))
@@ -663,7 +725,6 @@ def monotonic_proof():
     return error_approx_combo, integrated_error
 
 
-# Forgot I did this. 3/30/22
 # res = monotonic_proof()
 # fig, axs = plt.subplots(6, 6)
 # ax_y_counter = 0
@@ -675,8 +736,25 @@ def monotonic_proof():
 #     ax_y_counter += 1
 # plt.show()
 
+### 7/15 order and norm experiemnts
+N = 100
+G1, A1 = configuration_model_graph(N)
+G2, A2 = erdos_renyi_graph(N, .012)
+order_norm_test(A1, A2, .12, [1, 3], [None, None], plt.subplots(2)[1])
+order_norm_test(A1, A2, .12, [1, 3], [2, 2], plt.subplots(2)[1])
+order_norm_test(A2, A1, .12, [1, 3], [None, None], plt.subplots(2)[1])
+order_norm_test(A2, A1, .12, [1, 3], [2, 2], plt.subplots(2)[1])
+G1, A1 = barbell_graph(N)
+G2, A2 = cycle_graph(N)
+order_norm_test(A1, A2, .015, [1, 3], [None, None], plt.subplots(2)[1])
+order_norm_test(A1, A2, .015, [1, 3], [2, 2], plt.subplots(2)[1])
+order_norm_test(A2, A1, .015, [1, 3], [None, None], plt.subplots(2)[1])
+order_norm_test(A2, A1, .015, [1, 3], [2, 2], plt.subplots(2)[1])
+plt.show()
 
 ###### FIG 2
+## 7/7/22: Want to test figure two validations if the absolute value of the matrix elt-wise isn't applied
+## Would have to change internal code
 N = 100
 G3, A3 = configuration_model_graph(N)
 G6, A6 = erdos_renyi_graph(N, .012)
