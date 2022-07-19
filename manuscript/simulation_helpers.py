@@ -1,5 +1,8 @@
 from src.compression import *
 from src.solvers import *
+import matplotlib.pyplot as plt
+import json
+import numpy as np
 
 
 def integrate_error_ts(temporal_ts, temporal_inf, other_ts, other_inf):
@@ -31,12 +34,26 @@ def run_even(temporal_network, t_interval, beta, number_snapshots, iters):
     return d[0], d[1], even_compressed
 
 
-def run_optimal(temporal_network, t_interval, beta, number_snapshots, iters, error_type):
+def run_optimal(temporal_network, t_interval, beta, number_snapshots, iters, error_type, order, norm):
     N = len(temporal_network.snapshots[0].A)
     y_init = np.full(N, 1 / N)
     # y_init = temporal_network.snapshots[0].dd_normalized
     optimal_network, total_chosen_error = Compressor.compress(temporal_network, iterations=iters, how='optimal',
-                                                              error_type=error_type)
+                                                              error_type=error_type, order=order, norm=norm)
+    # Saving the compressed temporal snapshots from the algorithm
+    # Meta data gets saved
+    # metadata = {'snapshots': [{'beta': snap.beta, 'duration': snap.duration, 'start_time': snap.start_time,
+    #                          'end_time': snap.end_time} for snap in optimal_network.snapshots]}
+    # f = open('results/compressed_hospital/metadata.json', "w")
+    # json.dump(metadata, f)
+    # f.close()
+    # Adjacency matrices each get saved to a file
+    # for snapshot in optimal_network.snapshots:
+    #     filename = f'adjmat_start_{snapshot.start_time}.txt'
+    #     # multiply each adjacency matrix by the duration to make it an integer
+    #     scaled_matrix = snapshot.A * snapshot.duration
+    #     scaled_matrix = scaled_matrix.astype(int)
+    #     np.savetxt(f'results/compressed_hospital/{filename}', scaled_matrix, fmt='%.7e')
     # optimal_network = network_objects.Compressor.compress(temporal_network, level=levels, iterations=iters, how='optimal', error_type='terminal')
     model = TemporalSIModel(params={'beta': beta}, y_init=y_init,
                             end_time=number_snapshots * t_interval,
@@ -45,6 +62,21 @@ def run_optimal(temporal_network, t_interval, beta, number_snapshots, iters, err
     compressed_solution = np.sum(solution_p, axis=0)
     d = digitize_solution(solution_t_compressed, compressed_solution, number_snapshots, t_interval)
     return d[0], d[1], optimal_network, total_chosen_error
+
+
+def solve_on_given_network(network, beta):
+    N = len(network.snapshots[0].A)
+    y_init = np.full(N, 1 / N)
+    # y_init = temporal_network.snapshots[0].dd_normalized
+    model = TemporalSIModel(params={'beta': beta}, y_init=y_init,
+                            end_time=network.snapshots[-1].end_time,
+                            networks=network.get_time_network_map())
+    solution_t_compressed, solution_p = model.solve_model()
+    compressed_solution = np.sum(solution_p, axis=0)
+    number_snapshots = network.length
+    t_interval = network.snapshots[-1].end_time / number_snapshots
+    d = digitize_solution(solution_t_compressed, compressed_solution, number_snapshots, t_interval)
+    return d[0], d[1], network
 
 
 def run_temporal(temporal_network, t_interval, beta, number_snapshots):
@@ -61,11 +93,11 @@ def run_temporal(temporal_network, t_interval, beta, number_snapshots):
     return d[0], d[1], temporal_network
 
 
-def one_round(temporal_network, t_interval, beta, number_snapshots, iters):
+def one_round(temporal_network, t_interval, beta, number_snapshots, iters, order, norm):
     temp_t, temp_inf, temp_net = run_temporal(temporal_network, t_interval, beta, number_snapshots)
     even_t, even_inf, even_net = run_even(temporal_network, t_interval, beta, number_snapshots, iters)
     opt_t_c, opt_inf_c, opt_net_c, total_chosen_error = run_optimal(temporal_network, t_interval, beta,
-                                                                    number_snapshots, iters, 'combined')
+                                                                    number_snapshots, iters, 'combined', order, norm)
     total_optimal_c_error_nm = round(integrate_error_ts(temp_t, temp_inf, opt_t_c, opt_inf_c), 3)
     total_even_error_nm = round(integrate_error_ts(temp_t, temp_inf, even_t, even_inf), 3)
 
@@ -95,7 +127,8 @@ def error_as_fn_of(temp_net, beta, iter_range):
         c = int(r)
         even_t, even_inf, even_net = run_even(temp_net, t_interval, beta, temp_net.length, c)
         opt_t, opt_inf, opt_net, tce = run_optimal(current_optimal_temp_net, t_interval, beta,
-                                                   temp_net.length, c - current_iters_for_optim, 'combined')
+                                                   temp_net.length, c - current_iters_for_optim,
+                                                   'combined', order=3, norm=None)
         current_iters_for_optim = c
         current_optimal_temp_net = opt_net
         total_optimal_error_nm = integrate_error_ts(temp_t, temp_inf, opt_t, opt_inf) # integral of normalized distances from temporal time series
