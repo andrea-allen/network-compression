@@ -167,7 +167,7 @@ def figure_4(all_results):
     ax2.set_ylabel('Infected nodes')
     ax2.legend(loc='upper left', frameon=False)
 
-    ############# PANEL (b)
+    ############# PANEL (a)
     pairwise_error_panel(ax1)
 
     # panel_b_1(ax2, all_results)
@@ -333,9 +333,12 @@ def panel_c_idea2(ax, results, type_colors):
 
 
 def pairwise_error_panel(ax):
-    eps_200 = pd.read_csv("results/pairwise_error_200_layers.csv", index_col=0)
-    eps_1000 = pd.read_csv("results/pairwise_error_1000_layers.csv", index_col=0)
-    eps_4000 = pd.read_csv("results/pairwise_error_4000_layers.csv", index_col=0)
+    # eps_200 = pd.read_csv("results/pairwise_error_200_layers.csv", index_col=0)
+    eps_200 = pd.read_csv("results/draft2/pairwise_error_200_layers_updated.csv", index_col=0)
+    # eps_1000 = pd.read_csv("results/pairwise_error_1000_layers.csv", index_col=0)
+    eps_1000 = pd.read_csv("results/draft2/pairwise_error_1000_layers_updated.csv", index_col=0)
+    # eps_4000 = pd.read_csv("results/pairwise_error_4000_layers.csv", index_col=0)
+    eps_4000 = pd.read_csv("results/draft2/pairwise_error_4000_layers_updated.csv", index_col=0)
     ax.scatter(eps_4000["st_times"], eps_4000["pariwise_eps"]/max(eps_4000["pariwise_eps"]), label= "4000", s=12, alpha=0.5, color=cmr_map[0],
                edgecolor='face')
     ax.scatter(eps_1000["st_times"], eps_1000["pariwise_eps"]/max(eps_1000["pariwise_eps"]), label= "1000", s=12, alpha=0.5, color=cmr_map[3],
@@ -343,25 +346,26 @@ def pairwise_error_panel(ax):
     ax.scatter(eps_200["st_times"], eps_200["pariwise_eps"]/max(eps_200["pariwise_eps"]), label= "200", s=12, alpha=1.0, color=cmr_map[5],
                edgecolor='face')
     ax.set_ylabel("Relative pairwise error $\\xi_{A,B}$")
-    ax.legend(loc='upper left', frameon=False)
+    ax.legend(loc='upper left', frameon=True)
     return ax
 
 
 """
 SYNTHETIC PLOT (FIGURE 3)
 """
-results_one_round = json.load(open('./results/synthetic_data.json', "r"))
-result_array = np.loadtxt('./results/synthetic_error_integrals.txt', delimiter=',')
-results = {'iter_range': result_array[0], 'even_error_norm': result_array[1], 'opt_error_norm': result_array[2], 'tce_all': result_array[3]}
-figure_3({"one_round_results": results_one_round, "error_difference_results": results})
-plt.tight_layout()
-plt.show()
+# results_one_round = json.load(open('./results/draft2/synthetic_data_updated.json', "r"))
+# result_array = np.loadtxt('./results/draft2/synthetic_error_integrals_updated.txt', delimiter=',')
+# results = {'iter_range': result_array[0], 'even_error_norm': result_array[1], 'opt_error_norm': result_array[2],
+#            'tce_all': result_array[3]}
+# figure_3({"one_round_results": results_one_round, "error_difference_results": results})
+# plt.tight_layout()
+# plt.show()
 
 """
 HOSPITAL DATA PLOT (FIGURE 4)
 """
-results_one_round = json.load(open('results/hospital_data.json', "r"))
-result_array = np.loadtxt('./results/hospital_error_integrals.txt', delimiter=',')
+results_one_round = json.load(open('results/draft2/hospital_data_updated.json', "r"))
+result_array = np.loadtxt('./results/draft2/hospital_error_integrals_updated.txt', delimiter=',')
 results = {'iter_range': result_array[0], 'even_error_norm': result_array[1], 'opt_error_norm': result_array[2], 'tce_all': result_array[3]}
 figure_4({"one_round_results": results_one_round, "error_difference_results": results})
 plt.tight_layout()

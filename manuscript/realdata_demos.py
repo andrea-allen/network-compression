@@ -63,7 +63,7 @@ if HOSP_DAT:
     Panel (a) for Fig. 4 experiment.
     Solving for pairwise error between snapshots at 3 granularities of initial pre-compressed snapshots
     """
-    ## Getting pairwise errors for 3 granularities
+    # # Getting pairwise errors for 3 granularities
     # layer_nums = [200, 1000, 4000]
     # tau = int(constants.HOSP_TOTAL_TIME/num_snapshots)*.000015 # MEANS .000015 = tau / int(total_time/num_snapshots)
     # # to get beta for the others, do new_beta = tau / int(total_time/num_snapshots)
@@ -81,8 +81,8 @@ if HOSP_DAT:
     #     res = pd.DataFrame()
     #     res["st_times"] = st
     #     res["pariwise_eps"] = eps
-    #     res.to_csv(f"./pairwise_error_{layer_num}_layers.csv")
-    #############
+    #     res.to_csv(f"./results/draft2/pairwise_error_{layer_num}_layers_updated.csv")
+    # #############
 
     """
     Panel (b) for Fig. 4 experiment.
@@ -90,28 +90,10 @@ if HOSP_DAT:
     """
     results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME/num_snapshots),
                                   .000015, len(hospital_snapshots), iters=190, order=1, norm=2)
-    # f = open('hospital_data.json', "w")
-    # json.dump(results_one_round, f)
-    # f.close()
+    f = open('results/draft2/hospital_data_updated.json', "w")
+    json.dump(results_one_round, f)
+    f.close()
     # results_one_round = json.load(open('results/hospital_data.json', "r"))
-    plot_one_round(results_one_round)
-    plt.show()
-    results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME / num_snapshots),
-                                  .000015, len(hospital_snapshots), iters=190, order=1, norm=2)
-    plot_one_round(results_one_round)
-
-    results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME / num_snapshots),
-                                  .000015, len(hospital_snapshots), iters=192, order=3, norm=2)
-    plot_one_round(results_one_round)
-    results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME / num_snapshots),
-                                  .000015, len(hospital_snapshots), iters=192, order=1, norm=2)
-    plot_one_round(results_one_round)
-
-    results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME / num_snapshots),
-                                  .000015, len(hospital_snapshots), iters=194, order=3, norm=2)
-    plot_one_round(results_one_round)
-    results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME / num_snapshots),
-                                  .000015, len(hospital_snapshots), iters=194, order=1, norm=2)
     plot_one_round(results_one_round)
     plt.show()
 
@@ -123,12 +105,12 @@ if HOSP_DAT:
     """
     # results = error_as_fn_of(TemporalNetwork(hospital_snapshots), .000015, np.arange(100, 200, 1))
     # result_array = np.array([results['iter_range'], results['even_error_norm'], results['opt_error_norm'], results['tce_all']])
-    # np.savetxt('hospital_error_integrals.txt', result_array, delimiter=',')
-    result_array = np.loadtxt('./results/hospital_error_integrals.txt', delimiter=',')
-    results = {'iter_range': result_array[0], 'even_error_norm': result_array[1], 'opt_error_norm': result_array[2],
-               'tce_all': result_array[3]}
-    plot_error_fn_compressions(results)
-    plt.show()
+    # np.savetxt('results/draft2/hospital_error_integrals_updated.txt', result_array, delimiter=',')
+    # result_array = np.loadtxt('./results/draft2/hospital_error_integrals_updated.txt', delimiter=',')
+    # results = {'iter_range': result_array[0], 'even_error_norm': result_array[1], 'opt_error_norm': result_array[2],
+    #            'tce_all': result_array[3]}
+    # plot_error_fn_compressions(results)
+    # plt.show()
 
     """
     Robustness experiment for range of beta.

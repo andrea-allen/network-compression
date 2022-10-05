@@ -12,7 +12,9 @@ matplotlib.rcParams.update({'font.size': 12})
 
 
 cmr_map = sns.color_palette('CMRmap_r', 6)
-type_colors = {'temp': 'grey', 'even': cmr_map[1], 'algo': cmr_map[5], 'snap1': cmr_map[2], 'snap2': cmr_map[3]}
+type_colors = {'temp': 'grey', 'even': cmr_map[1], 'algo': cmr_map[5],
+               'snap1': cmr_map[2], 'snap2': cmr_map[3]}
+print(type_colors)
 
 
 def multi_panel_fig_idea2(snapshots, beta, increments):
@@ -277,6 +279,7 @@ def manuscript_fig2(A, B, beta, taus):
     error_approx_terminal = np.zeros(len(taus))
     error_approx_halftime = np.zeros(len(taus))
     error_approx_combo = np.zeros(len(taus))
+    error_approx_o3 = np.zeros(len(taus))
     matexp_temps = np.zeros(len(taus))
     matexp_temps_h = np.zeros(len(taus))
     matexp_aggs = np.zeros(len(taus))
@@ -296,10 +299,12 @@ def manuscript_fig2(A, B, beta, taus):
         B_lay = Snapshot(tau / beta, 2 * tau / beta, beta, B)
         epsilon_terminal = Compressor.epsilon(A_lay, B_lay, error_type='terminal')
         epsilon_halftime = Compressor.epsilon(A_lay, B_lay, error_type='halftime')
-        epsilon_combo = Compressor.epsilon(A_lay, B_lay, error_type='combined', order=2, norm=2)
+        epsilon_combo = Compressor.epsilon(A_lay, B_lay, error_type='combined', order=1, norm=2)
+        epsilon_combo_o3 = Compressor.epsilon(A_lay, B_lay, error_type='combined', order=3, norm=2)
         error_approx_terminal[t] = epsilon_terminal
         error_approx_halftime[t] = epsilon_halftime
         error_approx_combo[t] = epsilon_combo
+        error_approx_o3[t] = epsilon_combo_o3
         # for values tau in 0, T run a deterministic temporal
         y_init = A_lay.dd_normalized
         temp_model = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=2 * tau / beta,
@@ -347,8 +352,9 @@ def manuscript_fig2(A, B, beta, taus):
                           alpha=0.25)
     ax[0, 1].text(tau / beta - 4, temporal_timeseries[midpoint] + 3, 'temporal solution')
     ax[0, 1].text(tau / beta, aggregate_timeseries[midpoint] - 2, 'aggregate solution')
-    ax[0, 1].text(tau / beta, temporal_timeseries[midpoint] - .2*temporal_timeseries[midpoint], '$\\epsilon_{MID}$')
-    ax[0, 1].text(2*tau / beta, temporal_timeseries[-1] - .1*temporal_timeseries[-1], '$\\epsilon_{END}$')
+
+    ax[0, 1].text(tau / beta + .05*(tau / beta), temporal_timeseries[midpoint] - .2*temporal_timeseries[midpoint], '$I(t_1^A)$')
+    ax[0, 1].text(tau / beta + 0.4*(tau / beta), temporal_timeseries[-1] - .1*temporal_timeseries[-1], '$I(t_1^B)$')
 
 
 
@@ -406,9 +412,13 @@ def manuscript_fig2(A, B, beta, taus):
     # fig3, ax3 = plt.subplots()
     ### ALT 0,1 AX
     # Integral between curves vs approximation error term, showing not equality or linearity but monotonicity
-    ax[1,1].scatter(integral_solutions,error_approx_combo, color=type_colors['algo'],
-                    marker='s', alpha=0.3,
-                    label='increasing $\\beta\\cdot\\delta t$')
+
+    ### 7/21 idea: Ranking, instead of scatter plots? Of argsort of true vs argsort of prediction
+    ax[1,1].scatter(np.argsort(integral_solutions),np.argsort(error_approx_combo), color=type_colors['algo'],
+                    marker='o', alpha=0.5)
+    # ax[1,1].scatter(np.argsort(integral_solutions),np.argsort(error_approx_o3), color=cmr_map[0],
+    #                 marker='d', alpha=0.5,
+    #                 label='O(3)')
     # ax[1,1].scatter(taus,error_approx_combo/max(error_approx_combo), color=algo_blue,
     #                 marker='s', alpha=0.3,
     #                 label='error measure $\\xi_{A,B}$')
@@ -417,8 +427,10 @@ def manuscript_fig2(A, B, beta, taus):
     #                 label='true solution integral')
     # ax[0,0].plot(taus, integral_solutions, ls='-', lw=2, color='k', label='true solution')
     ax[1,1].set_xlabel('True solution integrated error')
+    ax[1,1].set_xlabel('Rank of area between solutions')
     # ax[1,1].set_xlabel('$\\beta \\cdot \\delta t$')
     ax[1,1].set_ylabel('Error measure $\\xi_{A,B}$')
+    ax[1,1].set_ylabel('Rank of $\\xi_{A,B}$')
     # ax[1,1].set_ylabel('Infected nodes error')
     ax[1,1].legend(frameon=False, loc='upper left')
     #####
@@ -441,8 +453,11 @@ def manuscript_fig2(A, B, beta, taus):
     # ax[1,1].plot(error_approx_combo/(2*taus/beta), error_approx_combo/(2*taus/beta), color='grey', ls=':')
 
     ## ALT SQUARE 1,1
-    ax[1,0].plot(taus,error_approx_combo/ (2 * taus / beta), ls='-.', lw=2, color=type_colors['algo'], label='prediction, $\\epsilon_{MID}+\\epsilon_{END}$')
-    ax[1,0].plot(taus,  (np.abs(det_temps - det_aggs) + np.abs(det_temps_halftime - det_aggs_halftime)), ls='-', lw=2, color='k', alpha=0.6, label='true solution, $\\epsilon_{MID}+\\epsilon_{END}$')
+    ax[1,0].plot(taus,error_approx_combo/ (2 * taus / beta), ls='-.', lw=2, color=type_colors['algo'], label='$\\epsilon_{MID}+\\epsilon_{END}$')
+    # ax[1,0].plot(taus,error_approx_o3/ (2 * taus / beta), ls='-.', lw=2, color=cmr_map[0], label='O(3), $\\epsilon_{MID}+\\epsilon_{END}$')
+    ax[1,0].plot(taus,  (np.abs(det_temps - det_aggs) + np.abs(det_temps_halftime - det_aggs_halftime)), ls='-',
+                 lw=2, color='k', alpha=0.6, label='$|I(t_1^B)_{TEMP} - I(t_1^B)_{AGG}|$\n'
+                                                   '$+|I(t_1^A)_{TEMP} - I(t_1^A)_{AGG}|$')
     ax[1,0].set_xlabel('$\\beta \\cdot \\delta t$')
     ax[1,0].set_ylabel('Infected nodes')
     ax[1,0].legend(frameon=False, loc='upper left')
@@ -737,20 +752,20 @@ def monotonic_proof():
 # plt.show()
 
 ### 7/15 order and norm experiemnts
-N = 100
-G1, A1 = configuration_model_graph(N)
-G2, A2 = erdos_renyi_graph(N, .012)
-order_norm_test(A1, A2, .12, [1, 3], [None, None], plt.subplots(2)[1])
-order_norm_test(A1, A2, .12, [1, 3], [2, 2], plt.subplots(2)[1])
-order_norm_test(A2, A1, .12, [1, 3], [None, None], plt.subplots(2)[1])
-order_norm_test(A2, A1, .12, [1, 3], [2, 2], plt.subplots(2)[1])
-G1, A1 = barbell_graph(N)
-G2, A2 = cycle_graph(N)
-order_norm_test(A1, A2, .015, [1, 3], [None, None], plt.subplots(2)[1])
-order_norm_test(A1, A2, .015, [1, 3], [2, 2], plt.subplots(2)[1])
-order_norm_test(A2, A1, .015, [1, 3], [None, None], plt.subplots(2)[1])
-order_norm_test(A2, A1, .015, [1, 3], [2, 2], plt.subplots(2)[1])
-plt.show()
+# N = 100
+# G1, A1 = configuration_model_graph(N)
+# G2, A2 = erdos_renyi_graph(N, .012)
+# order_norm_test(A1, A2, .12, [1, 3], [None, None], plt.subplots(2)[1])
+# order_norm_test(A1, A2, .12, [1, 3], [2, 2], plt.subplots(2)[1])
+# order_norm_test(A2, A1, .12, [1, 3], [None, None], plt.subplots(2)[1])
+# order_norm_test(A2, A1, .12, [1, 3], [2, 2], plt.subplots(2)[1])
+# G1, A1 = barbell_graph(N)
+# G2, A2 = cycle_graph(N)
+# order_norm_test(A1, A2, .015, [1, 3], [None, None], plt.subplots(2)[1])
+# order_norm_test(A1, A2, .015, [1, 3], [2, 2], plt.subplots(2)[1])
+# order_norm_test(A2, A1, .015, [1, 3], [None, None], plt.subplots(2)[1])
+# order_norm_test(A2, A1, .015, [1, 3], [2, 2], plt.subplots(2)[1])
+# plt.show()
 
 ###### FIG 2
 ## 7/7/22: Want to test figure two validations if the absolute value of the matrix elt-wise isn't applied
@@ -764,6 +779,7 @@ B = A6
 
 beta = .12
 manuscript_fig2(A, B, beta, taus)
+plt.show()
 # plt.savefig('fig2_05-23-22.pdf')
 # quick check with B then A
 manuscript_fig2(B, A, beta, taus)

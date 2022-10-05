@@ -36,16 +36,20 @@ loaded_network = TemporalNetworkDecoder().decode(json_str=json_str)
 # plt.show()
 # results_one_round = one_round(a_temporal_network, 5, .0017, a_temporal_network.length, iters=44)
 # results_one_round = one_round(loaded_network, 5, .0017, loaded_network.length, iters=44)
-# results_one_round = one_round(loaded_network, 5, .0017, loaded_network.length, iters=44, order=1, norm=2)
-# plot_one_round(results_one_round)
-# f = open('synthetic_data.json', "w")
+results_one_round = one_round(loaded_network, 5, .0017, loaded_network.length, iters=40, order=1, norm=2)
+plot_one_round(results_one_round)
+results_one_round = one_round(loaded_network, 5, .0017, loaded_network.length, iters=44, order=1, norm=2)
+plot_one_round(results_one_round)
+results_one_round = one_round(loaded_network, 5, .0017, loaded_network.length, iters=45, order=1, norm=2)
+plot_one_round(results_one_round)
+# f = open('results/draft2/synthetic_data_updated.json', "w")
 # json.dump(results_one_round, f)
 # f.close()
 # Loading pre-saved results:
-results_one_round = json.load(open('results/synthetic_data.json', "r"))
+# results_one_round = json.load(open('results/draft2/synthetic_data_updated.json', "r"))
 # results_one_round = one_round(loaded_network, 5, .0017, loaded_network.length, iters=40, order=1, norm=None)
 # plot_one_round(results_one_round)
-# plt.show()
+plt.show()
 ######
 
 """
@@ -55,11 +59,11 @@ as a function of the final number of snapshots in the compressed network.
 Initial 50 snapshots, compressions from 30 to 50 steps.
 """
 a_temporal_network = loaded_network
-# results = error_as_fn_of(a_temporal_network, .0017, np.arange(30, 50, 1))
-# result_array = np.array([results['iter_range'], results['even_error_norm'], results['opt_error_norm'], results['tce_all']])
-# np.savetxt('./results/synthetic_error_integrals.txt', result_array, delimiter=',')
-result_array = np.loadtxt('./results/synthetic_error_integrals.txt', delimiter=',')
-results = {'iter_range': result_array[0], 'even_error_norm': result_array[1], 'opt_error_norm': result_array[2], 'tce_all': result_array[3]}
+results = error_as_fn_of(a_temporal_network, .0017, np.arange(30, 50, 1))
+result_array = np.array([results['iter_range'], results['even_error_norm'], results['opt_error_norm'], results['tce_all']])
+np.savetxt('./results/draft2/synthetic_error_integrals_updated.txt', result_array, delimiter=',')
+# result_array = np.loadtxt('./results/synthetic_error_integrals.txt', delimiter=',')
+# results = {'iter_range': result_array[0], 'even_error_norm': result_array[1], 'opt_error_norm': result_array[2], 'tce_all': result_array[3]}
 plot_error_fn_compressions(results)
 plt.show()
 plot_manuscript_demo({"one_round_results": results_one_round, "error_difference_results": results})
@@ -80,20 +84,20 @@ results = {}
 results["difference_matrix"] = np.loadtxt('./results/synthetic_difference_2.txt', delimiter=',')
 results["tce"] = np.loadtxt('./results/synthetic_tce_2.txt', delimiter=',')
 
-plt.scatter(iter_range[1:], results["tce"][4][1:], marker='^', color='k', s=9)
-plt.box(False)
-plt.xlabel('Number of compressions')
-plt.semilogy()
-plt.tight_layout()
-plt.show()
-
-plot_comparison_and_error(results, betas, iter_range,
-                          total_time=np.sum([snapshot.duration for snapshot in a_temporal_network.snapshots]),
-                          orig_net_length=50)
-plt.show()
-plot_heatmap(results["difference_matrix"], betas, iter_range, "Difference algo-even")
-plt.show()
-plot_heatmap(results["tce"], betas, iter_range, "Total chosen error")
-plt.show()
-plot_tce(results["tce"], betas, iter_range)
-plt.show()
+# plt.scatter(iter_range[1:], results["tce"][4][1:], marker='^', color='k', s=9)
+# plt.box(False)
+# plt.xlabel('Number of compressions')
+# plt.semilogy()
+# plt.tight_layout()
+# plt.show()
+#
+# plot_comparison_and_error(results, betas, iter_range,
+#                           total_time=np.sum([snapshot.duration for snapshot in a_temporal_network.snapshots]),
+#                           orig_net_length=50)
+# plt.show()
+# plot_heatmap(results["difference_matrix"], betas, iter_range, "Difference algo-even")
+# plt.show()
+# plot_heatmap(results["tce"], betas, iter_range, "Total chosen error")
+# plt.show()
+# plot_tce(results["tce"], betas, iter_range)
+# plt.show()
