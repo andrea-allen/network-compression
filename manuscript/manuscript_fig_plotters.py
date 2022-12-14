@@ -22,7 +22,7 @@ def figure_3(all_results):
     ax1 = fig.add_subplot(3, 1, 1)
     ax2 = fig.add_subplot(3, 1, 2, sharex=ax1)
     ax3 = fig.add_subplot(3, 1, 3)
-    fig.set_size_inches(8, 9)
+    fig.set_size_inches(8.5, 9)
 
     results = all_results['one_round_results']
     temp_t = results['temp_t']
@@ -136,7 +136,7 @@ def figure_4(all_results):
     ax1 = fig.add_subplot(3, 1, 1)
     ax2 = fig.add_subplot(3, 1, 2, sharex=ax1)
     ax3 = fig.add_subplot(3, 1, 3)
-    fig.set_size_inches(8, 9)
+    fig.set_size_inches(8.5, 9)
 
     results = all_results['one_round_results']
     temp_t = results['temp_t']
@@ -254,7 +254,6 @@ def panel_c_idea1(ax, results, type_colors):
     ax.get_xaxis().set_minor_formatter(NullFormatter())
     ax.set_xticklabels([100, 80, 60, 40, 20, 1])
 
-    # TODO figure out scales and labels
     # x_tick_list = list(iter_range[::10])
     # x_tick_list.extend([199])
     # ax.set_xticks(x_tick_list)
@@ -266,7 +265,7 @@ def panel_c_idea1(ax, results, type_colors):
     ax.legend(loc='lower left', frameon=False)
 
 def panel_c_idea2(ax, results, type_colors):
-    iter_range = results["iter_range"]
+    iter_range = results["iter_range"] # 1 2 3 4 5
     optimal_errors_norm = results['opt_error_norm']
     even_errors_norm = results['even_error_norm']
     ax.scatter(iter_range, optimal_errors_norm/optimal_errors_norm[-1], color=type_colors['algo'], label='$d_{ALG}$', alpha=0.9, s=5)
@@ -307,14 +306,17 @@ def panel_c_idea2(ax, results, type_colors):
 
     #### INSET
     axins = ax.inset_axes([.1, .55, 0.5, 0.4])
-    axins.scatter(iter_range[50:95], (200-iter_range[50:95]) / alg_count[50:95], s=4, color=type_colors['algo'])
+    # Ratio is of two snapshot amounts
+    axins.scatter(iter_range[50:95], (200-iter_range[50:95])/(200-iter_range[50:95]-alg_count[50:95]), s=4, color=type_colors['algo'])
     axins.set_xticks([150, 160, 170, 180, 190, 195])
     axins.set_xticklabels([50, 40, 30, 20, 10, 5])
-    axins.set_ylim([0,10])
-    axins.set_xlabel('number snapshots')
-    axins.set_ylabel('ALG factor')
-    mean_rate = np.mean((200-iter_range[50:95]) / alg_count[50:95])
+    axins.set_ylim([0,3])
+    axins.set_xlabel('# even snapshots')
+    axins.set_ylabel('compression factor')
+    mean_rate = np.mean((200-iter_range[50:95])/(200-iter_range[50:95]-alg_count[50:95]))
     axins.plot(iter_range[50:95], np.full(45, mean_rate), ls="--", color='grey')
+    axins.set_yticks([0,mean_rate,3])
+    axins.set_yticklabels([0,np.round(mean_rate,1),3])
     #####
 
     ax.semilogy()

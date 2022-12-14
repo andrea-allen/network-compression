@@ -4,6 +4,7 @@ import random
 from src.temporalnetwork import *
 import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 
 """
 Custom network generator functions for use in example code
@@ -248,7 +249,6 @@ def synthetic_demo1(t_interval, beta):
 
     ordered_pairs = [A2, A2, A0, A0B, A0,A0B, A0B, A0, A0, A0,A0, A0, A0, A0, A2,A2, A3, A4, A0, A0B,A0, A0B, A2, A5, A6,
                      A2, A0, A2, A4, A5,A3, A3, A4, A4, A0, A0, A0,A0, A4, A5,A3, A3, A4, A4, A5,A0, A0, A4, A4, A5,]
-
     snapshots = []
     current_start_t = 0
     for l in range(len(ordered_pairs)):
@@ -256,3 +256,64 @@ def synthetic_demo1(t_interval, beta):
             Snapshot(current_start_t, t_interval + current_start_t, beta, ordered_pairs[l]))
         current_start_t += t_interval
     return TemporalNetwork(snapshots)
+
+def display_synthetic():
+    N = 200
+    A0 = np.zeros((N, N))
+    A0[50,21] = 1
+    A0[21,50] = 1
+    A0[27,42] = 1
+    A0[42,27] = 1
+    A0B = np.zeros((N, N))
+    A0B[57,49] = 1
+    A0B[49,57] = 1
+    A0B[13,4] = 1
+    A0B[4,13] = 1
+    G2, A2 = barbell_graph(N)
+    G3, A3 = configuration_model_graph(N)
+    G4, A4 = erdos_renyi_graph(N, .03)
+    G5, A5 = configuration_model_graph(N)
+    G6, A6 = erdos_renyi_graph(N, .01)
+
+    all_networks = [A0, A0B, A2, A3, A4, A5, A6, A0]
+    colors=sns.color_palette("Paired", n_colors=8)
+
+    show_all=True
+    if show_all:
+        fig, axs = plt.subplots(2, 4, tight_layout=True, sharey=True)
+        fig.set_size_inches(9,5)
+        next = 0
+        for i in range(2):
+            for j in range(4):
+                # network_graph = nx.from_numpy_array(all_networks[next])
+                net_hist = np.histogram(np.sum(all_networks[next], axis=1), bins=np.arange(0,200))
+                axs[i, j].bar(net_hist[1][1:], net_hist[0], linewidth=1, alpha=1, color=colors[next])                # pos = nx.spring_layout(network_graph)
+                # nx.draw_networkx_nodes(network_graph, pos=pos, ax=axs[i,j], node_color="black", node_size=1)
+                # nx.draw_networkx_edges(network_graph, pos=pos, ax=axs[i,j], edge_color="grey", width=0.5)
+                axs[i, j].text(0.9, 0.9, f'({next + 1})', horizontalalignment='center', verticalalignment='center',
+                               transform=axs[i, j].transAxes)
+                axs[i,j].set_xlim([0,20])
+                axs[i,j].set_xlabel("degree")
+                axs[i,j].set_ylabel("number nodes")
+                next += 1
+        axs[0,2].set_xlim([90,110])
+
+    show_all=True
+    if show_all:
+        fig2, axs = plt.subplots(2, 4, tight_layout=True)
+        fig2.set_size_inches(9,5)
+
+        next = 0
+        for i in range(2):
+            for j in range(4):
+                network_graph = nx.from_numpy_array(all_networks[next])
+                pos = nx.spring_layout(network_graph)
+                nx.draw_networkx_edges(network_graph, pos=pos, ax=axs[i,j], edge_color="grey", width=0.2)
+                nx.draw_networkx_nodes(network_graph, pos=pos, ax=axs[i,j], node_size=1, node_color=colors[next])
+                axs[i, j].text(0.1, 0.9, f'({next + 1})', horizontalalignment='center', verticalalignment='center',
+                               transform=axs[i, j].transAxes)
+                next += 1
+
+    plt.show()
+
+

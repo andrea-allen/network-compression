@@ -5,6 +5,8 @@ from manuscript.network_generators import *
 from manuscript.plotters import *
 import json
 from collections import namedtuple
+import seaborn as sns
+import network_generators
 import gzip
 
 """
@@ -24,6 +26,32 @@ loaded_network = TemporalNetworkDecoder().decode(json_str=json_str)
 # Otherwise, just re-create the sample network
 # a_temporal_network = synthetic_demo1(5, .0017)
 # loaded_network = a_temporal_network
+
+"""
+Visualizing the networks / families
+"""
+
+colors = sns.color_palette("Paired", n_colors=8)
+color_map_order = [ 3, 3, 1, 2, 1, 2, 2, 1, 1, 1,1, 1, 1, 1, 3, 3, 4, 5, 1, 2, 1,
+              2, 3, 6, 7, 3, 1, 3, 5, 6, 4, 4, 5, 5, 1, 1, 1, 1, 5, 6, 4, 4,
+              5, 5, 6, 1, 8, 5, 5, 6]
+show_all = True
+if show_all:
+    fig3, axs = plt.subplots(10,5, tight_layout=True)
+    fig3.set_size_inches(12,12)
+    next = 0
+    for i in range(10):
+        for j in range(5):
+            network_graph = nx.from_numpy_array(loaded_network.snapshots[next].A)
+            pos = nx.spring_layout(network_graph)
+            nx.draw_networkx_edges(network_graph, pos=pos, ax=axs[i, j], edge_color="grey", width=0.2)
+            nx.draw_networkx_nodes(network_graph, pos=pos, ax=axs[i, j], node_size=1, node_color=colors[color_map_order[next]-1])
+            axs[i, j].text(0.1, 0.8, f'({next + 1})', horizontalalignment='center', verticalalignment='center',
+                           transform=axs[i, j].transAxes)
+            next += 1
+
+    network_generators.display_synthetic()
+
 
 """
 Experiment for comparing error measures

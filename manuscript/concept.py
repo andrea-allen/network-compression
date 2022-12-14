@@ -350,11 +350,11 @@ def manuscript_fig2(A, B, beta, taus):
                     color='k', lw=1)
     ax[0, 1].fill_between(solution_t_temporal, aggregate_timeseries, temporal_timeseries, color=tau_color[t],
                           alpha=0.25)
-    ax[0, 1].text(tau / beta - 4, temporal_timeseries[midpoint] + 3, 'temporal solution')
-    ax[0, 1].text(tau / beta, aggregate_timeseries[midpoint] - 2, 'aggregate solution')
+    ax[0, 1].text(tau / beta - 4.5, temporal_timeseries[midpoint] + 3, 'temporal solution')
+    ax[0, 1].text(tau / beta, aggregate_timeseries[midpoint] - 2.5, 'aggregate solution') # TODO move these down
 
-    ax[0, 1].text(tau / beta + .05*(tau / beta), temporal_timeseries[midpoint] - .2*temporal_timeseries[midpoint], '$I(t_1^A)$')
-    ax[0, 1].text(tau / beta + 0.4*(tau / beta), temporal_timeseries[-1] - .1*temporal_timeseries[-1], '$I(t_1^B)$')
+    # ax[0, 1].text(tau / beta + .05*(tau / beta), temporal_timeseries[midpoint] - .2*temporal_timeseries[midpoint], '$I(t_1^A)$')
+    # ax[0, 1].text(tau / beta + 0.4*(tau / beta), temporal_timeseries[-1] - .1*temporal_timeseries[-1], '$I(t_1^B)$') #TODO take these away
 
 
 
@@ -453,11 +453,13 @@ def manuscript_fig2(A, B, beta, taus):
     # ax[1,1].plot(error_approx_combo/(2*taus/beta), error_approx_combo/(2*taus/beta), color='grey', ls=':')
 
     ## ALT SQUARE 1,1
-    ax[1,0].plot(taus,error_approx_combo/ (2 * taus / beta), ls='-.', lw=2, color=type_colors['algo'], label='$\\epsilon_{MID}+\\epsilon_{END}$')
+    ax[1,0].plot(taus,error_approx_combo/ (2 * taus / beta), ls='-.', lw=2, color=type_colors['algo'], label='$\\epsilon_{MID}+\\epsilon_{END}$') #TODO: error emid and eend
     # ax[1,0].plot(taus,error_approx_o3/ (2 * taus / beta), ls='-.', lw=2, color=cmr_map[0], label='O(3), $\\epsilon_{MID}+\\epsilon_{END}$')
+    # ax[1,0].plot(taus,  (np.abs(det_temps - det_aggs) + np.abs(det_temps_halftime - det_aggs_halftime)), ls='-',
+    #              lw=2, color='k', alpha=0.6, label='$|I(t_1^B)_{TEMP} - I(t_1^B)_{AGG}|$\n'
+    #                                                '$+|I(t_1^A)_{TEMP} - I(t_1^A)_{AGG}|$') #TODO: error between ODEs
     ax[1,0].plot(taus,  (np.abs(det_temps - det_aggs) + np.abs(det_temps_halftime - det_aggs_halftime)), ls='-',
-                 lw=2, color='k', alpha=0.6, label='$|I(t_1^B)_{TEMP} - I(t_1^B)_{AGG}|$\n'
-                                                   '$+|I(t_1^A)_{TEMP} - I(t_1^A)_{AGG}|$')
+                 lw=2, color='k', alpha=0.6, label='error between\nsolutions') #TODO: label as error between ODEs
     ax[1,0].set_xlabel('$\\beta \\cdot \\delta t$')
     ax[1,0].set_ylabel('Infected nodes')
     ax[1,0].legend(frameon=False, loc='upper left')
