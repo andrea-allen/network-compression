@@ -88,6 +88,12 @@ def produce_snapshots(df, t_start, increment):
     snapshot_2 = df[['i', 'j']].where((df['t'] >= t_start+increment) & (df['t'] < t_start+2*increment))
     return snapshot_1, snapshot_2
 
+def enumerate_string_nodes(df):
+    named_nodes = set(list(df['i'].unique()) + list(df['j'].unique()))
+    number_labels = np.arange(len(named_nodes))
+    node_dict = {a : x for (a,x) in zip(named_nodes, number_labels)}
+    return node_dict
+
 def graphOf(snapshot, second_snapshot):
     """
     Makes a networkx graph of nodes AND EDGES from snapshot1, (first arugment)
@@ -118,6 +124,21 @@ def parse_data(filename, t_start, increment):
     elif 'listcontacts' in filename:
         df = pd.read_csv(filename, delimiter='\t', header=None)
         df.columns = ['t', 'i', 'j']
+    elif 'RFID' in filename:
+        df = pd.read_csv(filename, delimiter='\t', header=0)
+        df.columns = ['t', 'i', 'j', 'datetime']
+        enumerated_nodes = enumerate_string_nodes(df)
+        df = df.replace({"i": enumerated_nodes})
+        df = df.replace({"j": enumerated_nodes})
+    elif 'High-School' in filename:
+        df = pd.read_csv(filename, delimiter=' ', header=None)
+        df.columns = ['t', 'i', 'j', 'Ci', 'Cj']
+    elif 'ht09' in filename:
+        df = pd.read_csv(filename, delimiter='\t', header=None)
+        df.columns = ['t', 'i', 'j']
+    elif 'office' in filename:
+        df = pd.read_csv(filename, delimiter=' ', header=None)
+        df.columns = ['t', 'i', 'j']
     else:
         df = pd.read_csv(filename, delimiter=' ', header=None)
         df.columns = ['t', 'i', 'j']
@@ -137,6 +158,18 @@ def dataset_statistics(filename):
     elif 'listcontacts' in filename:
         df = pd.read_csv(filename, delimiter='\t', header=None)
         df.columns = ['t', 'i', 'j']
+    elif 'RFID' in filename:
+        df = pd.read_csv(filename, delimiter='\t', header=0)
+        df.columns = ['t', 'i', 'j', 'datetime']
+    elif 'High-School' in filename:
+        df = pd.read_csv(filename, delimiter=' ', header=None)
+        df.columns = ['t', 'i', 'j', 'Ci', 'Cj']
+    elif 'ht09' in filename:
+        df = pd.read_csv(filename, delimiter='\t', header=None)
+        df.columns = ['t', 'i', 'j']
+    elif 'office' in filename:
+        df = pd.read_csv(filename, delimiter=' ', header=None)
+        df.columns = ['t', 'i', 'j']
     else:
         df = pd.read_csv(filename, delimiter=' ', header=None)
         df.columns = ['t', 'i', 'j']
@@ -145,6 +178,8 @@ def dataset_statistics(filename):
     info['num_timestamps'] = len(unique_timestamps)
     info['max_timestamp'] = max(unique_timestamps)
     info['min_timestamp'] = min(unique_timestamps)
+    info['total_time'] = info['max_timestamp'] - info['min_timestamp']
+    info['num_snapshots'] = len(df)
     ## WANT: Distribution of contacts per timestamp
     ## Distribution of frequency of the same contact
     histo = plt.hist(df.groupby(['i', 'j']).size(), bins='auto')
@@ -198,6 +233,7 @@ def data_network_snapshots(filename, interval, beta, num_snapshots, start_t):
         data = parse_data(filename, start_t, interval)
         graphs.append(data[0])
         print(f'number of nodes in snapshot: {len(data[0].nodes())}')
+        print(f'Creating snapshot {i}')
         start_times.append(start_t - min_real_t)
         end_times.append(start_t+interval - min_real_t)
         graphs.append(data[1])

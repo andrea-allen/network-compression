@@ -7,20 +7,102 @@ import json
 import constants
 
 CONF_DAT = False
-HOSP_DAT = True
+HOSP_DAT = False
+HS_DAT = False
+HT09_DAT = True
+OFFICE_DAT = True
 
-if CONF_DAT:
+if HT09_DAT:
+    file_name = '../raw_data/ht09_contact_list.dat'
+    metadata = netgen.dataset_statistics(file_name)
+    num_snapshots = 200
+    # num_snapshots = 1000 # use .000065
+    # num_snapshots = 4000 # use .0002
+    beta = .00001
+    # beta = .000025
+    snapshots = netgen.data_network_snapshots(file_name,
+                                                         int(metadata['total_time'] / num_snapshots), beta,
+                                                         int(num_snapshots/2),
+                                                         metadata['min_timestamp'])
+
+    results = one_round(TemporalNetwork(snapshots), int(metadata['total_time'] / num_snapshots), beta,
+                        len(snapshots), iters=190, order=1, norm=2)
+    plot_one_round(results)
+    plt.show()
+
+if OFFICE_DAT:
+    file_name = '../raw_data/tij_InVS15_office.dat_'
+    metadata = netgen.dataset_statistics(file_name)
+    num_snapshots = 200
+    # num_snapshots = 1000 # use .000065
+    # num_snapshots = 4000 # use .0002
+    beta = .00001
+    # beta = .000025
+    snapshots = netgen.data_network_snapshots(file_name,
+                                                         int(metadata['total_time'] / num_snapshots), beta,
+                                                         int(num_snapshots/2),
+                                                         metadata['min_timestamp'])
+
+    results = one_round(TemporalNetwork(snapshots), int(metadata['total_time'] / num_snapshots), beta,
+                        len(snapshots), iters=190, order=1, norm=2)
+    plot_one_round(results)
+    plt.show()
+
+
+if HS_DAT:
+    hs_metadata = netgen.dataset_statistics('../raw_data/High-School_data_2013.csv')
+    # plt.show()
     num_snapshots = 200
     # num_snapshots = 1000 # use .000065
     # num_snapshots = 4000 # use .0002
     beta = .000015
+    # beta = .000025
+    snapshots = netgen.data_network_snapshots('../raw_data/High-School_data_2013.csv',
+                                                         int(hs_metadata['total_time'] / num_snapshots), beta,
+                                                         int(num_snapshots/2),
+                                                         hs_metadata['min_timestamp'])
+
+    results = one_round(TemporalNetwork(snapshots), int(hs_metadata['total_time'] / num_snapshots), beta,
+                        len(snapshots), iters=20, order=1, norm=2)
+    plot_one_round(results)
+    plt.show()
+
+    results = one_round(TemporalNetwork(snapshots), int(hs_metadata['total_time'] / num_snapshots), beta,
+                        len(snapshots), iters=190, order=1, norm=2)
+    plot_one_round(results)
+    plt.show()
+
+    results = one_round(TemporalNetwork(snapshots), int(hs_metadata['total_time'] / num_snapshots), beta,
+                        len(snapshots), iters=196, order=1, norm=2)
+    plot_one_round(results)
+    plt.show()
+
+if CONF_DAT:
+    # netgen.dataset_statistics('../raw_data/tij_InVS.dat')
+    # plt.show()
+    num_snapshots = 200
+    # num_snapshots = 1000 # use .000065
+    # num_snapshots = 4000 # use .0002
+    beta = .000015
+    beta = .000025
     conference_snapshots = netgen.data_network_snapshots('../raw_data/tij_InVS.dat',
                                                          int(constants.CONF_TOTAL_TIME/num_snapshots), beta,
                                                          int(num_snapshots/2), constants.CONF_START_TIME)
 
     results = one_round(TemporalNetwork(conference_snapshots), int(constants.CONF_TOTAL_TIME/num_snapshots), beta,
-                        len(conference_snapshots), iters=180)
+                        len(conference_snapshots), iters=180, order=1, norm=2)
     plot_one_round(results)
+    plt.show()
+
+    results = one_round(TemporalNetwork(conference_snapshots), int(constants.CONF_TOTAL_TIME/num_snapshots), beta,
+                        len(conference_snapshots), iters=190, order=1, norm=2)
+    plot_one_round(results)
+    plt.show()
+
+    results = one_round(TemporalNetwork(conference_snapshots), int(constants.CONF_TOTAL_TIME/num_snapshots), beta,
+                        len(conference_snapshots), iters=196, order=1, norm=2)
+    plot_one_round(results)
+    plt.show()
 
 
 if HOSP_DAT:
@@ -103,7 +185,7 @@ if HOSP_DAT:
     as a function of the final number of snapshots in the compressed network.
     Initial 200 pre-compressed snapshots, compressions from 100 to 200 steps.
     """
-    # results = error_as_fn_of(TemporalNetwork(hospital_snapshots), .000015, np.arange(100, 200, 1))
+    results = error_as_fn_of(TemporalNetwork(hospital_snapshots), .000015, np.arange(100, 200, 1))
     # result_array = np.array([results['iter_range'], results['even_error_norm'], results['opt_error_norm'], results['tce_all']])
     # np.savetxt('results/draft2/hospital_error_integrals_updated.txt', result_array, delimiter=',')
     # result_array = np.loadtxt('./results/draft2/hospital_error_integrals_updated.txt', delimiter=',')
