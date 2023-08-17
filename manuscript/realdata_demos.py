@@ -10,7 +10,7 @@ CONF_DAT = False
 HOSP_DAT = False
 HS_DAT = False
 HT09_DAT = True
-OFFICE_DAT = True
+OFFICE_DAT = False
 
 if HT09_DAT:
     file_name = '../raw_data/ht09_contact_list.dat'
@@ -114,20 +114,20 @@ if HOSP_DAT:
     """
     Split data into snapshots with specified number of snapshots
     """
-    # Durations with 200 snapshots: 1737
-    num_snapshots = 200
-    hospital_snapshots = netgen.data_network_snapshots('../raw_data/detailed_list_of_contacts_Hospital.dat_',
-                                                       int(constants.HOSP_TOTAL_TIME/num_snapshots), .000015,
-                                                       int(num_snapshots/2),
-                                                       constants.HOSP_START_TIME)
-
-    """
-    Solve for the temporal solution given the number of snapshots and beta to assess base dynamics
-    """
-    res = run_temporal(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME/num_snapshots), .000015,
-                       num_snapshots)
-    plt.scatter(res[0], res[1])
-    plt.show()
+    # # Durations with 200 snapshots: 1737
+    # num_snapshots = 200
+    # hospital_snapshots = netgen.data_network_snapshots('../raw_data/detailed_list_of_contacts_Hospital.dat_',
+    #                                                    int(constants.HOSP_TOTAL_TIME/num_snapshots), .000015,
+    #                                                    int(num_snapshots/2),
+    #                                                    constants.HOSP_START_TIME)
+    #
+    # """
+    # Solve for the temporal solution given the number of snapshots and beta to assess base dynamics
+    # """
+    # res = run_temporal(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME/num_snapshots), .000015,
+    #                    num_snapshots)
+    # plt.scatter(res[0], res[1])
+    # plt.show()
 
     """
     Assessing compression from 1,000 snapshots to 10 vs 200
@@ -170,14 +170,14 @@ if HOSP_DAT:
     Panel (b) for Fig. 4 experiment.
     Solving single round of 200 snapshots -> 10 snapshots for Fig.4 in manuscript panel (b)
     """
-    results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME/num_snapshots),
-                                  .000015, len(hospital_snapshots), iters=190, order=1, norm=2)
-    f = open('results/draft2/hospital_data_updated.json', "w")
-    json.dump(results_one_round, f)
-    f.close()
-    # results_one_round = json.load(open('results/hospital_data.json', "r"))
-    plot_one_round(results_one_round)
-    plt.show()
+    # results_one_round = one_round(TemporalNetwork(hospital_snapshots), int(constants.HOSP_TOTAL_TIME/num_snapshots),
+    #                               .000015, len(hospital_snapshots), iters=190, order=1, norm=2)
+    # f = open('results/draft2/hospital_data_updated.json', "w")
+    # json.dump(results_one_round, f)
+    # f.close()
+    # # results_one_round = json.load(open('results/hospital_data.json', "r"))
+    # plot_one_round(results_one_round)
+    # plt.show()
 
     """
     Panel (c) for Fig. 4 experiment.
@@ -185,7 +185,7 @@ if HOSP_DAT:
     as a function of the final number of snapshots in the compressed network.
     Initial 200 pre-compressed snapshots, compressions from 100 to 200 steps.
     """
-    results = error_as_fn_of(TemporalNetwork(hospital_snapshots), .000015, np.arange(100, 200, 1))
+    # results = error_as_fn_of(TemporalNetwork(hospital_snapshots), .000015, np.arange(100, 200, 1))
     # result_array = np.array([results['iter_range'], results['even_error_norm'], results['opt_error_norm'], results['tce_all']])
     # np.savetxt('results/draft2/hospital_error_integrals_updated.txt', result_array, delimiter=',')
     # result_array = np.loadtxt('./results/draft2/hospital_error_integrals_updated.txt', delimiter=',')

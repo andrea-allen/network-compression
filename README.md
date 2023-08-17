@@ -43,3 +43,5 @@ snapshots from the two compression regimes, even segmentation vs. our algorithm.
 The lower panel shows the integral of the error between the red and blue time series and the
 grey temporal solution. You can see that the algorithmic compression performs
 much closer to the original fully temporal dynamics than an even compression.
+
+# TODO cite the original data

@@ -83,12 +83,14 @@ def run_temporal(temporal_network, t_interval, beta, number_snapshots):
     N = len(temporal_network.snapshots[0].A)
     y_init = np.full(N, 1 / N)
     # y_init = temporal_network.snapshots[0].dd_normalized
-    model = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=number_snapshots * t_interval,
+    model = TemporalSIModel(params={'beta': beta}, y_init=y_init, end_time=temporal_network.snapshots[-1].end_time,
                             networks=temporal_network.get_time_network_map())
     # plt.plot([np.sum(model.networks[key]) for key, val in model.networks.items()]) # 2x contacts per snapshot, plotted
     # plt.show()
     solution_t_temporal, solution_p = model.solve_model()
     temporal_solution = np.sum(solution_p, axis=0)
+    total_time = temporal_network.snapshots[-1].end_time - temporal_network.snapshots[0].start_time
+    t_interval = total_time/number_snapshots
     d = digitize_solution(solution_t_temporal, temporal_solution, number_snapshots, t_interval)
     return d[0], d[1], temporal_network
 
@@ -109,6 +111,29 @@ def one_round(temporal_network, t_interval, beta, number_snapshots, iters, order
                'even_boundary_times': list(even_net.get_time_network_map().keys()),
                'total_algo_error': total_optimal_c_error_nm, 'total_even_error': total_even_error_nm,
                'total_chosen_error': total_chosen_error}
+
+    return results
+
+def compare_mdl(temporal_network_algo, temporal_network_mdl, temporal_net_original,
+                t_interval, beta, iters):
+    temp_t, temp_inf, temp_net = run_temporal(temporal_net_original, t_interval, beta, temporal_net_original.length)
+    opt_t, opt_inf, opt_net = run_temporal(temporal_network_algo, t_interval, beta, temporal_network_algo.length)
+    mdl_t, mdl_inf, mdl_net = run_temporal(temporal_network_mdl, t_interval, beta, temporal_network_mdl.length)
+    even_t, even_inf, even_net = run_even(temporal_net_original, t_interval, beta, temporal_net_original.length, iters)
+    total_optimal_c_error_nm = round(integrate_error_ts(temp_t, temp_inf, opt_t, opt_inf), 3)
+    total_mdl_error_nm = round(integrate_error_ts(temp_t, temp_inf, mdl_t, mdl_inf), 3)
+    total_even_error_nm = round(integrate_error_ts(temp_t, temp_inf, even_t, even_inf), 3)
+
+    results = {'temp_t': temp_t, 'temp_inf': temp_inf, 'algo_t': opt_t, 'algo_inf': opt_inf,
+               'even_t': even_t,'even_inf': even_inf, 'mdl_t': mdl_t, 'mdl_inf': mdl_inf,
+               'algo_boundary_times': list(opt_net.get_time_network_map().keys()),
+               'temp_boundary_times': list(temporal_net_original.get_time_network_map().keys()),
+               'even_boundary_times': list(even_net.get_time_network_map().keys()),
+               'mdl_boundary_times': list(mdl_net.get_time_network_map().keys()),
+               'total_algo_error': total_optimal_c_error_nm,
+               'total_even_error': total_even_error_nm,
+               'total_mdl_error': total_mdl_error_nm,
+               'total_chosen_error': 0}
 
     return results
 
