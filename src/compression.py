@@ -198,7 +198,7 @@ class Compressor:
             D = approx_A_temp - approx_Agg
             error = D
 
-        P0 = snapshot.dd_normalized
+        P0 = snapshot.dd_normalized # THIS IS NOT THE DD, THIS IS THE NORMALIZED DEGREE OF THE NODE
 
         total_infect_diff = np.sum(np.abs(error).dot(P0))
         total_infect_diff = total_infect_diff * (snapshot.duration + other_snapshot.duration)

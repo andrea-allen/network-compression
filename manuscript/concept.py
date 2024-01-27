@@ -8,11 +8,15 @@ from manuscript.network_generators import *
 from manuscript.plotters import *
 import matplotlib
 plt.rcParams
-matplotlib.rcParams.update({'font.size': 12})
+matplotlib.rcParams.update({'font.size': 16})
+matplotlib.rcParams['mathtext.fontset'] = 'stix'
+matplotlib.rcParams['font.family'] = 'STIXGeneral'
 
 
 cmr_map = sns.color_palette('CMRmap_r', 6)
 type_colors = {'temp': 'grey', 'even': cmr_map[1], 'algo': cmr_map[5],
+               'snap1': cmr_map[2], 'snap2': cmr_map[3]}
+type_colors = {'temp': 'grey', 'even': 'mediumblue', 'algo': 'darkorange',
                'snap1': cmr_map[2], 'snap2': cmr_map[3]}
 print(type_colors)
 
@@ -781,6 +785,7 @@ B = A6
 
 beta = .12
 manuscript_fig2(A, B, beta, taus)
+plt.savefig('./figures/revisions/fig2_revision.pdf')
 plt.show()
 # plt.savefig('fig2_05-23-22.pdf')
 # quick check with B then A

@@ -36,29 +36,37 @@ beta = .000015
 precomp_level = [1000, 800, 600, 400, 300, 200, 150, 100]
 precomps_len = len(precomp_level)
 
-# ########## PRE-COMPRESSED NETWORK STATISTICS
-# for i, l in enumerate(precomp_level):
-#     print(l)
-#     num_snapshots = l
-#     hospital_interval = int(constants.HOSP_TOTAL_TIME / num_snapshots)
-#     hospital_snapshots = netgen.data_network_snapshots('../raw_data/detailed_list_of_contacts_Hospital.dat_',
-#                                                        hospital_interval, .000015,
-#                                                        int(num_snapshots / 2),
-#                                                        constants.HOSP_START_TIME)
-#     temporal_net = TemporalNetwork(hospital_snapshots)
-#     # IDEALLY SAVE THE SNAPSHOTS?
-#     save_network(f'hospital_tempnet_{l}', temporal_net)
-#
-#     t_interval=hospital_interval
-#
-#     # Network data
-#     stats = network_statistics.get_network_stats(temporal_net)
-#     stats.to_csv(f"../supplement_data/hospital_tempnet_stats_{l}")
-#     sns.set_palette("Set2")
-#     plt.scatter(stats['Snapshot number'], stats['C'] * 75 * 3, alpha=0.5)
-#     plt.scatter(stats['Snapshot number'], stats['k'], alpha=0.5)
-#     plt.scatter(stats['Snapshot number'], stats['q'], alpha=0.5)
-#     plt.show()
+########## PRE-COMPRESSED NETWORK STATISTICS
+## For supplement: Add in new network statistics: number of connected components, and the fraction of nodes in GCC
+for i, l in enumerate(precomp_level):
+    print(l)
+    num_snapshots = l
+    # If not saved yet:
+    hospital_interval = int(constants.HOSP_TOTAL_TIME / num_snapshots)
+    # hospital_snapshots = netgen.data_network_snapshots('../raw_data/detailed_list_of_contacts_Hospital.dat_',
+    #                                                    hospital_interval, .000015,
+    #                                                    int(num_snapshots / 2),
+    #                                                    constants.HOSP_START_TIME)
+
+    # temporal_net = TemporalNetwork(hospital_snapshots)
+    # SAVE THE SNAPSHOTS HERE:
+    # save_network(f'hospital_tempnet_{l}', temporal_net)
+    # If saved already, just read back the snapshots:
+    temporal_net = load_network(f'../supplement_data/hospital_tempnet_{l}')
+
+
+    t_interval=hospital_interval
+
+    # Network data
+    stats = network_statistics.get_network_stats(temporal_net)
+    stats.to_csv(f"../supplement_data/hospital_tempnet_stats_{l}_revision")
+    sns.set_palette("Set2")
+    plt.scatter(stats['Snapshot number'], stats['C'] * 75 * 3, alpha=0.5)
+    plt.scatter(stats['Snapshot number'], stats['k'], alpha=0.5)
+    plt.scatter(stats['Snapshot number'], stats['q'], alpha=0.5)
+    plt.scatter(stats['Snapshot number'], stats['N connected components'], alpha=0.5)
+    plt.scatter(stats['Snapshot number'], stats['prop in gcc'], alpha=0.5)
+    plt.show()
 
 ######## PRE-COMPRESSION EXPERIMENT
 # num_snaps_left = 5 # synthetic
@@ -147,7 +155,7 @@ if do_experiment:
 ### loading network stats
 network_stats = {}
 for i, l in enumerate(precomp_level):
-    network_stats[l] = pd.read_csv(f"../supplement_data/hospital_tempnet_stats_{l}")
+    network_stats[l] = pd.read_csv(f"../supplement_data/hospital_tempnet_stats_{l}_revision")
 
 ### Plots of the k,q, C values for the compressed levels:
 fig, ax = plt.subplots(3, 1)
@@ -189,10 +197,10 @@ hc_1000_10 = pd.read_csv('../supplement_data/hospital_precompress_results_1000_t
 L10_results = {100: hc_100_10,150: hc_150_10,200: hc_200_10,300: hc_300_10,
                400: hc_400_10,600: hc_600_10,800: hc_800_10,1000: hc_1000_10}
 
-network_stats_table = pd.concat([network_stats[k].groupby(by='N').mean() for k,v in L10_results.items() ])
-network_stats_table = network_stats_table[['k', 'q', 'C']]
+network_stats_table = pd.concat([np.round(network_stats[k].groupby(by='N').mean(),2) for k,v in L10_results.items() ])
+network_stats_table = network_stats_table[['k', 'q', 'C', 'N connected components', 'prop in gcc']]
 network_stats_table['Pre-compression level'] = precomp_level[::-1]
-network_stats_table = network_stats_table[['Pre-compression level', 'k', 'q', 'C']]
+network_stats_table = network_stats_table[['Pre-compression level', 'k', 'q', 'C', 'N connected components', 'prop in gcc']]
 tex_table_network_stats = network_stats_table.to_latex()
 
 sns.set_palette("Set1")
@@ -225,3 +233,18 @@ plt.ylabel('Precompression level')
 plt.yticks(np.arange(len(precomp_level))*10/10, precomp_level)
 plt.legend(loc='lower right')
 plt.show()
+
+
+# \begin{tabular}{lrrrrrr}
+# \toprule
+# {} &  Pre-compression level &         k &         q &         C &  N connected components &  prop in gcc \\
+# N    &                        &           &           &           &                         &              \\
+# \midrule
+# 75.0 &                    100 &  1.167200 &  4.967353 &  0.100313 &               59.300000 &     0.220400 \\
+# 75.0 &                    150 &  0.886222 &  4.128274 &  0.082498 &               61.513333 &     0.189600 \\
+# 75.0 &                    200 &  0.729067 &  3.584591 &  0.071957 &               62.895000 &     0.169067 \\
+# 75.0 &                    300 &  0.556444 &  2.958493 &  0.059856 &               64.573333 &     0.143244 \\
+# 75.0 &                    400 &  0.454533 &  2.549883 &  0.051168 &               65.705000 &     0.125467 \\
+# 75.0 &                    600 &  0.346756 &  2.028734 &  0.043293 &               67.056667 &     0.103889 \\
+# 75.0 &                    800 &  0.285933 &  1.730294 &  0.037249 &               67.991250 &     0.088783 \\
+# 75.0 &                   1000 &  0.247413 &  1.565905 &  0.033388 &               68.658000 &     0.078627 \\

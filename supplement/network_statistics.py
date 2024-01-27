@@ -96,17 +96,43 @@ def get_network_stats(temporal_network):
     # Number nodes N
     num_nodes = [snap.N for snap in temporal_network.snapshots]
     # Average degree
-    k = [np.sum(snap.dd_normalized * np.arange(len(snap.dd_normalized))) for snap in temporal_network.snapshots]
+    # k = [np.sum(snap.dd_normalized * np.arange(len(snap.dd_normalized))) for snap in temporal_network.snapshots]
+    k = [np.mean(np.sum(snap.A, axis=0)) for snap in temporal_network.snapshots]
     # .2x^0, .3x^1, .25x^2, .5x^3
     # Average excess degree
-    q = [np.sum(snap.dd_normalized[1:] * np.arange(len(snap.dd_normalized) - 1)) for snap in temporal_network.snapshots]
+    # (k-1)kp_k/sum kp_k
+    # q = [np.sum(snap.dd_normalized[1:] * np.arange(len(snap.dd_normalized) - 1)) for snap in temporal_network.snapshots]
+    # q = [max (0,np.sum([snap.dd_normalized[k]*k*(k-1) for
+    #                        k in range(len(snap.dd_normalized))])/(np.sum([snap.dd_normalized[k]*k
+    #                                                                       for k in range(len(snap.dd_normalized))]))) for snap in temporal_network.snapshots]
+    # q_raw = np.array([np.mean([max((np.sum(snap.A, axis=0) - 1)[i],0) for i in range(75)]) for snap in temporal_network.snapshots])/np.array(k)
+    # q_raw = np.array([np.array([np.array(nx.degree_histogram(nx.from_numpy_matrix(snap.A)))[i]*i*(i-1) for
+    #     i in range(len(np.array(nx.degree_histogram(nx.from_numpy_matrix(snap.A)))))]) for snap in temporal_network.snapshots])/np.array(k)
+    #
+    q_empty = np.zeros(temporal_network.length)
+    s = 0
+    for snap in temporal_network.snapshots:
+        dd = np.array(nx.degree_histogram(nx.from_numpy_matrix(snap.A)))/snap.N
+        # q_excess = 0
+        # for i in range(len(dd)):
+        #     q_excess += dd[i]*i*(i-1)
+        q_empty[s] = np.sum(np.arange(len(dd)-1)*np.arange(len(dd))[1:]*dd[1:])/(np.sum(dd*np.arange(len(dd))))
+        s += 1
+
+    q = q_empty
+
+    # q = [max(0, q_raw[i]) for i in range(len(q_raw))]
     # Assortativity
     # assort = [nx.degree_assortativity_coefficient(nx.from_numpy_matrix(snap.A)) for snap in temporal_network.snapshots]
     # Clustering
     clustered = [nx.average_clustering(nx.from_numpy_matrix(snap.A)) for snap in temporal_network.snapshots]
 
-    stat_table = pd.DataFrame(np.array([snap_numbers, num_nodes, k, q, clustered]).T,
+    n_connected_components = [nx.number_connected_components(nx.from_numpy_matrix(snap.A)) for snap in temporal_network.snapshots]
+    # gcc = list(max(nx.connected_components(nx.from_numpy_matrix(temporal_network.snapshots[100].A)), key=len))[0]
+    prop_nodes_in_gcc = [len(max((nx.connected_components(nx.from_numpy_matrix(snap.A))), key=len)) / snap.N for snap in temporal_network.snapshots]
+
+    stat_table = pd.DataFrame(np.array([snap_numbers, num_nodes, k, q, clustered, n_connected_components, prop_nodes_in_gcc]).T,
                               columns=['Snapshot number', 'N', 'k', 'q',
-                                       'C'])
+                                       'C', 'N connected components', 'prop in gcc'])
 
     return stat_table
