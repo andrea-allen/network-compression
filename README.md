@@ -1,6 +1,10 @@
 # network-compression
 
-Repository includes source code and supporting work for manuscript in preparation.
+This repository includes source code and supporting work for manuscript in preparation.
+Some of the original data and results in raw form may not be included in the repository. Please reach out with questions.
+
+Please cite this code and the original manuscript (in preparation) if used.
+
 
 ## src/temporalnetwork.py
 Includes source code for temporal network and snapshot objects.
@@ -44,4 +48,22 @@ The lower panel shows the integral of the error between the red and blue time se
 grey temporal solution. You can see that the algorithmic compression performs
 much closer to the original fully temporal dynamics than an even compression.
 
-# TODO cite the original data
+## Data source
+
+For validation of the method and data used in the manuscript, data was provided courtesy of the *SocioPatterns* project:
+http://www.sociopatterns.org/datasets/
+
+Full citations for the datasets used:
+
+"Can co-location be used as a proxy for face-to-face contacts?", M. Génois and A. Barrat, EPJ Data Science 7, 11 (2018).
+
+R. Mastrandrea, J. Fournet, A. Barrat,
+Contact patterns in a high school: a comparison between data collected using wearable sensors, contact diaries and friendship surveys.
+PLoS ONE 10(9): e0136497 (2015)
+
+J. Fournet, A. Barrat, Contact patterns among high school students,
+PLoS ONE 9(9):e107878 (2014). 
+
+P. Vanhems et al., Estimating Potential Infection Transmission Routes in Hospital Wards Using Wearable Proximity Sensors, PLoS ONE 8(9): e73970 (2013). 
+
+L. Isella et al.,  What’s in a crowd? Analysis of face-to-face behavioral networks, Journal of Theoretical Biology 271, 166 (2011).
