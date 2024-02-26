@@ -1,10 +1,15 @@
 # network-compression
 
-This repository includes source code and supporting work for manuscript in preparation.
+This repository includes source code and supporting work for the 2024 article in Physical Review Letters, "Compressing the Chronology of a Temporal Network with Graph Commutators."
 Some of the original data and results in raw form may not be included in the repository. Please reach out with questions.
 
-Please cite this code and the original manuscript (in preparation) if used.
+Please cite this code and use the following citation from our publication, if used in all or part.
 
+## Citation:
+
+Allen, A. J., Moore, C., & Hébert-Dufresne, L. (2024). Compressing the Chronology of a Temporal Network with Graph Commutators. Physical Review Letters, 132(7), 077402.
+
+# Codebase
 
 ## src/temporalnetwork.py
 Includes source code for temporal network and snapshot objects.
